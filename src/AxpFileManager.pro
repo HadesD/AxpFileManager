@@ -49,6 +49,7 @@ SOURCES += \
     AxpFileListView.cpp \
     AxpItem.cpp \
     CustomLabel.cpp \
+    Global.cpp \
     StyledItemDelegate.cpp \
     Utils.cpp \
         main.cpp \
@@ -60,6 +61,7 @@ HEADERS += \
     AxpFileListView.hpp \
     AxpItem.hpp \
     CustomLabel.hpp \
+    Global.hpp \
         MainWindow.hpp \
     Log.hpp \
     StyledItemDelegate.hpp \

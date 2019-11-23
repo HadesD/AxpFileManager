@@ -7,7 +7,6 @@
 #include <QMimeDatabase>
 #include <QFileDialog>
 #include <QDesktopServices>
-#include <QTemporaryDir>
 #include <QDesktopWidget>
 #include <qt_windows.h>
 
@@ -19,6 +18,7 @@
 #include "Utils.hpp"
 #include "CustomLabel.hpp"
 #include "StyledItemDelegate.hpp"
+#include "Global.hpp"
 
 AxpFileListView::AxpFileListView(QWidget *parent) : QTableView(parent),
   mHoverRow(-1), mHoverColumn(-1)
@@ -206,23 +206,16 @@ void AxpFileListView::openSelected()
     imgDlg->show();
   } else {
     LOG_DEBUG(__FUNCTION__ << "trying to open another");
-    QTemporaryDir dir;
-    dir.setAutoRemove(false);
-
-    if (!dir.isValid()) {
-      LOG(dir.path() << ": Cannot make temp dir");
-      return;
-    }
-    LOG_DEBUG(__FUNCTION__ << dir.path());
+    QTemporaryDir& dir = Global::getTempDir();
 
     QString fileName(dir.path() + '/' + itemKey);
     if (axpArc->extractToDisk(fKey, fileName.toLocal8Bit().data())) {
 //      QMimeDatabase db;
 //      QMimeType mime = db.mimeTypeForFile(fileName, QMimeDatabase::MatchContent);
 //      LOG_DEBUG(__FUNCTION__ << mime);
-      if (!QDesktopServices::openUrl(fileName)) {
+      if (reinterpret_cast<int>(ShellExecute(GetDesktopWindow(), "open", fileName.toLocal8Bit().data(), "", "", 1)) < 32)
+      {
         LOG_DEBUG(__FUNCTION__ << fileName << ": failed to open native app");
-//        dir.setAutoRemove(true);
       }
     }
   }

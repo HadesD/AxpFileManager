@@ -51,7 +51,7 @@ QByteArray AxpArchivePort::read(const AxpArchivePort::FileName& fileName) const
     return nullptr;
   }
 
-  return QByteArray().append(reinterpret_cast<char*>(fileData.get()), readSize);
+  return QByteArray().append(reinterpret_cast<char*>(fileData.get()), static_cast<int>(readSize));
 }
 
 bool AxpArchivePort::extractToDisk(const AxpArchivePort::FileName& fileName, const AxpArchivePort::FileName& toDiskFileName)
@@ -80,7 +80,7 @@ bool AxpArchivePort::extractToDisk(const AxpArchivePort::FileName& fileName, con
     return false;
   }
 
-  if (hFile.write(fileData))
+  if (!hFile.write(fileData))
   {
     hFile.close();
     return false;
@@ -125,30 +125,34 @@ void AxpArchivePort::startOpenAxpArchive(std::function<void ()> onStarted, std::
     }
     LOG_DEBUG("AxpArchivePort::startOpenAxpArchive::Thread open success");
 
-    AXP::IStream* listStream = m_pPakFile->openFile(AXP::PackFile::LIST_FILENAME);
-    if (!listStream)
+    std::unique_ptr<
+        AXP::IStream, std::function<void(AXP::IStream*)>
+        > hListStream(m_pPakFile->openFile(AXP::PackFile::LIST_FILENAME), [](AXP::IStream* s){
+      s->close();
+    });
+    if (!hListStream)
     {
       openAxpArchiveThread->quit();
       return;
     }
 
     // Skip hex line
-    listStream->skipLine();
+    hListStream->skipLine();
 
     char szTempLine[MAX_PATH*4] = {0};
-    listStream->readLine(szTempLine, sizeof(szTempLine));
+    hListStream->readLine(szTempLine, sizeof(szTempLine));
     uint32_t nFileCount = static_cast<uint32_t>(atoi(szTempLine));
 
 //    while (!listStream->eof())
-    for (uint32_t i = 0; !listStream->eof(); ++i)
+    for (uint32_t i = 0; !hListStream->eof(); ++i)
     {
-      listStream->readLine(szTempLine, sizeof(szTempLine));
+      hListStream->readLine(szTempLine, sizeof(szTempLine));
 
       std::vector< std::string > vStringVec;
       AXP::convertStringToVector(szTempLine, vStringVec, "|", true, false);
       if(vStringVec.size() != 3)
       {
-        setLastError(AXP::AXP_ERRORS::AXP_ERR_FILE_FORMAT, "list file=%s", szTempLine);
+//        setLastError(AXP::AXP_ERRORS::AXP_ERR_FILE_FORMAT, "list file=%s", szTempLine);
         continue;
       }
 
@@ -159,29 +163,30 @@ void AxpArchivePort::startOpenAxpArchive(std::function<void ()> onStarted, std::
 
       const char* c_strFileName = strFileName.c_str();
 
-      AXP::IStream* pFileStream = m_pPakFile->openFile(c_strFileName);	//´ò¿ªÎÄ¼þ
-      if(!pFileStream)
+      std::unique_ptr<
+          AXP::IStream, std::function<void(AXP::IStream*)>
+          > hFileStream(m_pPakFile->openFile(c_strFileName), [](AXP::IStream* s){
+        s->close();
+      });
+      if(!hFileStream)
       {
         continue;
       }
 
-      const unsigned int nStreamSize = pFileStream->size();
+      const unsigned int nStreamSize = hFileStream->size();
       if(nStreamSize != nFileSize)
       {
-        pFileStream->close();
-        setLastError(AXP::AXP_ERRORS::AXP_ERR_FILE_READ, "file=%s", c_strFileName);
+        hFileStream->close();
+//        setLastError(AXP::AXP_ERRORS::AXP_ERR_FILE_READ, "file=%s", c_strFileName);
         continue;
       }
 
-      char* pTempBuf = new char[nStreamSize];
-      if(nStreamSize != pFileStream->read(pTempBuf, nStreamSize))
-      {
-        pFileStream->close();
-        setLastError(AXP::AXP_ERRORS::AXP_ERR_FILE_READ, "file=%s", c_strFileName);
-        continue;
-      }
-
-      pFileStream->close();
+//      std::unique_ptr<uchar[]> pTempBuf{new uchar[nStreamSize]};
+//      if(nStreamSize != hFileStream->read(pTempBuf.get(), nStreamSize))
+//      {
+//        setLastError(AXP::AXP_ERRORS::AXP_ERR_FILE_READ, "file=%s", c_strFileName);
+//        continue;
+//      }
 
       // Set arr
       m_fileList[strFileName] = 1;
@@ -191,7 +196,6 @@ void AxpArchivePort::startOpenAxpArchive(std::function<void ()> onStarted, std::
         m_progressUpdateCallback(strFileName, i+1, nFileCount);
       }
     }
-    listStream->close();
 
     // Quit at the end
     openAxpArchiveThread->quit();
