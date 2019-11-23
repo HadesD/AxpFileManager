@@ -127,7 +127,11 @@ void MainWindow::openAxpArchive(const QString &fileName)
   m_axpArchive->setFileEditable(false);
 
   m_axpArchive->setProgressCallback([this](auto fileName, auto cur, auto total) {
-    this->onAxpReadListProgress(fileName.data(), cur, total);
+    QString qStringFileName = QString::fromLocal8Bit(fileName.data());
+    emit this->invoke([=](){
+      this->setProgress(qStringFileName, cur, total);
+    });
+    this->onAxpReadListProgress(qStringFileName, cur, total);
   });
 
   m_axpArchive->startOpenAxpArchive([=]() {

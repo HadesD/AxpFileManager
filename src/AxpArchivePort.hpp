@@ -17,7 +17,7 @@ class AxpArchivePort : public QObject
   public:
     using FileName = std::string;
     using ProgressUpdateCallback = std::function<void(FileName fileName, uint32_t value, uint32_t total)>;
-    struct FileBlockNode {
+    struct FileListData {
 
     };
     using FileList = std::map<FileName, int>;

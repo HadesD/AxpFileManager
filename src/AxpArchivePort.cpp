@@ -2,6 +2,7 @@
 
 #include <AxpArchive.hpp>
 #include <QThread>
+#include <QDir>
 
 #include "Log.hpp"
 
@@ -23,31 +24,70 @@ bool AxpArchivePort::exists(const AxpArchivePort::FileName& fileName) const
 QByteArray AxpArchivePort::read(const AxpArchivePort::FileName& fileName) const
 {
   const char* c_fileName = fileName.data();
-  AXP::IStream* fileStream = m_pPakFile->openFile(c_fileName);
-  if (!fileStream) {
+  std::unique_ptr<
+      AXP::IStream, std::function<void(AXP::IStream*)>
+      > hFileStream(m_pPakFile->openFile(c_fileName), [](AXP::IStream* s){
+    s->close();
+  });
+  if (!hFileStream)
+  {
+    AXP::setLastError(AXP::AXP_ERRORS::AXP_ERR_FILE_FORMAT, "WinErr=%d FileName=%s", ::GetLastError(), c_fileName);
     return nullptr;
   }
 
-  const unsigned int fileSize = fileStream->size();
+  const uint32_t fileSize = hFileStream->size();
 
-  char* fileBuf = new char[fileSize];
-  if (!fileBuf) {
-    AXP::setLastError(AXP::AXP_ERRORS::AXP_ERR_MEMORY, "WinErr=%d", ::GetLastError());
+  std::unique_ptr<uchar[]> fileData{new uchar[fileSize]};
+  if (!fileData)
+  {
+    AXP::setLastError(AXP::AXP_ERRORS::AXP_ERR_MEMORY, "WinErr=%d FileName=%s", ::GetLastError(), c_fileName);
     return nullptr;
   }
-  const unsigned int readSize = fileStream->read(fileBuf, fileSize);
-  if (readSize != fileSize) {
-    delete[] fileBuf;
+
+  const uint32_t readSize = hFileStream->read(fileData.get(), fileSize);
+  if (fileSize != readSize)
+  {
+    AXP::setLastError(AXP::AXP_ERRORS::AXP_ERR_FILE_READ, "WinErr=%d FileName=%s", ::GetLastError(), c_fileName);
     return nullptr;
   }
-  QByteArray retData = QByteArray::fromRawData(fileBuf, static_cast<int>(fileSize));
-  delete[] fileBuf;
 
-  return retData;
+  return QByteArray().append(reinterpret_cast<char*>(fileData.get()), readSize);
 }
 
 bool AxpArchivePort::extractToDisk(const AxpArchivePort::FileName& fileName, const AxpArchivePort::FileName& toDiskFileName)
 {
+  const char* c_fileName = fileName.data();
+
+  QString q_fileName = QString::fromLocal8Bit(toDiskFileName.data());
+  if (!QDir(q_fileName).mkpath(".."))
+  {
+    AXP::setLastError(AXP::AXP_ERRORS::AXP_ERR_FILE_ACCESS, "WinErr=%d FileName=%s", ::GetLastError(), c_fileName);
+    return false;
+  }
+
+  QFile hFile(q_fileName);
+  if (!hFile.open(QIODevice::WriteOnly))
+  {
+    AXP::setLastError(AXP::AXP_ERRORS::AXP_ERR_FILE_READ, "WinErr=%d FileName=%s", ::GetLastError(), c_fileName);
+    return false;
+  }
+
+  QByteArray fileData = this->read(fileName);
+  if (fileData == nullptr)
+  {
+    AXP::setLastError(AXP::AXP_ERRORS::AXP_ERR_FILE_READ, "WinErr=%d FileName=%s", ::GetLastError(), c_fileName);
+    hFile.close();
+    return false;
+  }
+
+  if (hFile.write(fileData))
+  {
+    hFile.close();
+    return false;
+  }
+
+  hFile.close();
+
   return true;
 }
 
@@ -108,7 +148,7 @@ void AxpArchivePort::startOpenAxpArchive(std::function<void ()> onStarted, std::
       AXP::convertStringToVector(szTempLine, vStringVec, "|", true, false);
       if(vStringVec.size() != 3)
       {
-//        setLastError(AXP::AXP_ERRORS::AXP_ERR_FILE_FORMAT, "list file=%s", szTempLine);
+        setLastError(AXP::AXP_ERRORS::AXP_ERR_FILE_FORMAT, "list file=%s", szTempLine);
         continue;
       }
 
@@ -117,17 +157,19 @@ void AxpArchivePort::startOpenAxpArchive(std::function<void ()> onStarted, std::
       sscanf(vStringVec[1].c_str(), "%08X", &(nFileSize));
       sscanf(vStringVec[2].c_str(), "%08X", &(nFileCRC));
 
-      AXP::IStream* pFileStream = m_pPakFile->openFile(strFileName.c_str());	//´ò¿ªÎÄ¼þ
+      const char* c_strFileName = strFileName.c_str();
+
+      AXP::IStream* pFileStream = m_pPakFile->openFile(c_strFileName);	//´ò¿ªÎÄ¼þ
       if(!pFileStream)
       {
         continue;
       }
 
-      unsigned int nStreamSize = pFileStream->size();
+      const unsigned int nStreamSize = pFileStream->size();
       if(nStreamSize != nFileSize)
       {
         pFileStream->close();
-//        setLastError(AXP_ERR_FILE_READ, "file=%s", strFileName.c_str());
+        setLastError(AXP::AXP_ERRORS::AXP_ERR_FILE_READ, "file=%s", c_strFileName);
         continue;
       }
 
@@ -135,15 +177,18 @@ void AxpArchivePort::startOpenAxpArchive(std::function<void ()> onStarted, std::
       if(nStreamSize != pFileStream->read(pTempBuf, nStreamSize))
       {
         pFileStream->close();
-//        setLastError(AXP_ERR_FILE_READ, "file=%s", strFileName.c_str());
+        setLastError(AXP::AXP_ERRORS::AXP_ERR_FILE_READ, "file=%s", c_strFileName);
         continue;
       }
 
       pFileStream->close();
 
+      // Set arr
+      m_fileList[strFileName] = 1;
+
       if (m_progressUpdateCallback)
       {
-        m_progressUpdateCallback(strFileName, i, nFileCount);
+        m_progressUpdateCallback(strFileName, i+1, nFileCount);
       }
     }
     listStream->close();
