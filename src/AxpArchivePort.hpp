@@ -18,9 +18,20 @@ class AxpArchivePort : public QObject
     using FileName = std::string;
     using ProgressUpdateCallback = std::function<void(FileName fileName, uint32_t value, uint32_t total)>;
     struct FileListData {
+        enum class FileStatus {
+          UNKNOWN,
+          ORIGIN,
+          MODIFIED,
+          DELETED,
+          NEW,
+        };
 
+        FileName nameFromDisk;
+        uint32_t size;
+        FileStatus status = FileStatus::UNKNOWN;
+//        inline bool isStatus(FileStatus sts) {return static_cast<bool>(static_cast<int>(status) & static_cast<int>(sts));}
     };
-    using FileList = std::map<FileName, int>;
+    using FileList = std::map<FileName, FileListData>;
 
   public:
     explicit AxpArchivePort(QObject *parent = nullptr);
@@ -30,21 +41,21 @@ class AxpArchivePort : public QObject
     bool exists(const FileName& fileName) const;
     QByteArray read(const FileName& fileName) const;
     bool extractToDisk(const FileName& fileName, const FileName& toDiskFileName);
-    bool insertDiskFile(const FileName& diskFileName, const FileName& fileName);
-    bool removeFile(const FileName& fileName);
+    bool insertDiskFile(const FileName& diskFileName, const FileName& fileName, const bool saveAtOnce = false);
+    bool removeFile(const FileName& fileName, const bool saveAtOnce = false);
     bool saveToDiskFile(const FileName& toDiskFileName);
     void close();
 
   public:
-    void setFileName(const QString& fileName);
-    void setFileEditable(const bool editable);
+    void setAxpArchiveFileName(const QString& fileName);
+    void setAxpArchiveFileEditable(const bool editable);
     void startOpenAxpArchive(std::function<void()> onStarted = nullptr, std::function<void()> onFinished = nullptr);
     void setProgressCallback(ProgressUpdateCallback callback = nullptr) {m_progressUpdateCallback = callback;}
     AXP::AXP_ERRORS getLastError() const;
     QString getLastErrorMessage() const;
 
   public:
-    QString getArchiveFileName() const;
+    QString getArchiveFileName() {return m_fileName;}
     FileList& getFileList() {return m_fileList;}
 
   private:

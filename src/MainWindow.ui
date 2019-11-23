@@ -9,8 +9,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1005</width>
-    <height>650</height>
+    <width>805</width>
+    <height>567</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -1271,87 +1271,101 @@ QDateEdit::down-arrow:focus {
 </string>
   </property>
   <widget class="QWidget" name="centralWidget">
-   <layout class="QGridLayout" name="gridLayout">
-    <item row="0" column="0" colspan="3">
-     <layout class="QHBoxLayout" name="horizontalLayout">
-      <item>
-       <widget class="AxpDirListView" name="dirList">
-        <property name="maximumSize">
-         <size>
-          <width>300</width>
-          <height>16777215</height>
-         </size>
-        </property>
-        <property name="editTriggers">
-         <set>QAbstractItemView::NoEditTriggers</set>
-        </property>
-        <property name="sortingEnabled">
-         <bool>true</bool>
-        </property>
-        <property name="animated">
-         <bool>true</bool>
-        </property>
-        <property name="headerHidden">
-         <bool>true</bool>
-        </property>
-        <attribute name="headerVisible">
-         <bool>false</bool>
-        </attribute>
-       </widget>
-      </item>
-      <item>
-       <widget class="AxpFileListView" name="fileList">
-        <property name="editTriggers">
-         <set>QAbstractItemView::NoEditTriggers</set>
-        </property>
-        <property name="dragEnabled">
-         <bool>true</bool>
-        </property>
-        <property name="dragDropOverwriteMode">
-         <bool>false</bool>
-        </property>
-        <property name="dragDropMode">
-         <enum>QAbstractItemView::DragDrop</enum>
-        </property>
-        <property name="selectionBehavior">
-         <enum>QAbstractItemView::SelectRows</enum>
-        </property>
-        <property name="showGrid">
-         <bool>false</bool>
-        </property>
-        <attribute name="verticalHeaderVisible">
-         <bool>false</bool>
-        </attribute>
-       </widget>
-      </item>
-     </layout>
+   <layout class="QVBoxLayout" name="verticalLayout_5">
+    <item>
+     <widget class="QSplitter" name="splitter">
+      <property name="orientation">
+       <enum>Qt::Horizontal</enum>
+      </property>
+      <property name="handleWidth">
+       <number>1</number>
+      </property>
+      <widget class="QWidget" name="verticalLayoutWidget">
+       <layout class="QHBoxLayout" name="horizontalLayout">
+        <item>
+         <widget class="AxpDirListView" name="dirList">
+          <property name="editTriggers">
+           <set>QAbstractItemView::NoEditTriggers</set>
+          </property>
+          <property name="sortingEnabled">
+           <bool>true</bool>
+          </property>
+          <property name="animated">
+           <bool>true</bool>
+          </property>
+          <property name="headerHidden">
+           <bool>true</bool>
+          </property>
+          <attribute name="headerVisible">
+           <bool>false</bool>
+          </attribute>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="layoutWidget">
+       <layout class="QVBoxLayout" name="verticalLayout">
+        <item>
+         <widget class="AxpFileListView" name="fileList">
+          <property name="editTriggers">
+           <set>QAbstractItemView::NoEditTriggers</set>
+          </property>
+          <property name="dragEnabled">
+           <bool>true</bool>
+          </property>
+          <property name="dragDropOverwriteMode">
+           <bool>false</bool>
+          </property>
+          <property name="dragDropMode">
+           <enum>QAbstractItemView::DragDrop</enum>
+          </property>
+          <property name="selectionBehavior">
+           <enum>QAbstractItemView::SelectRows</enum>
+          </property>
+          <property name="showGrid">
+           <bool>false</bool>
+          </property>
+          <attribute name="verticalHeaderVisible">
+           <bool>false</bool>
+          </attribute>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+     </widget>
     </item>
-    <item row="1" column="0" colspan="3">
+    <item>
      <widget class="QGroupBox" name="statusGroupBox">
+      <property name="maximumSize">
+       <size>
+        <width>16777215</width>
+        <height>100</height>
+       </size>
+      </property>
       <property name="title">
        <string>Progress</string>
       </property>
-      <layout class="QGridLayout" name="gridLayout_3">
+      <layout class="QVBoxLayout" name="verticalLayout_6">
        <property name="leftMargin">
         <number>11</number>
        </property>
-       <item row="2" column="0">
-        <layout class="QGridLayout" name="statusLayout">
-         <item row="0" column="0">
+       <item>
+        <layout class="QVBoxLayout" name="verticalLayout_7">
+         <item>
           <widget class="QLabel" name="workingPathLabel">
            <property name="text">
             <string>Please select an .axp file</string>
            </property>
           </widget>
          </item>
-         <item row="1" column="0">
+         <item>
           <widget class="QLabel" name="messageLabel">
            <property name="text">
             <string>Status</string>
            </property>
           </widget>
          </item>
-         <item row="2" column="0">
+         <item>
           <widget class="QProgressBar" name="progressBar">
            <property name="value">
             <number>0</number>
@@ -1371,7 +1385,7 @@ QDateEdit::down-arrow:focus {
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1005</width>
+     <width>805</width>
      <height>20</height>
     </rect>
    </property>
@@ -1480,10 +1494,6 @@ QDateEdit::down-arrow:focus {
    <header location="global">AxpDirListView.hpp</header>
   </customwidget>
  </customwidgets>
- <tabstops>
-  <tabstop>fileList</tabstop>
-  <tabstop>dirList</tabstop>
- </tabstops>
  <resources/>
  <connections/>
 </ui>

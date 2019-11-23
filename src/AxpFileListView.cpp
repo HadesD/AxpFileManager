@@ -44,24 +44,26 @@ void AxpFileListView::showContextMenu(const QPoint &pos)
   QMenu contextMenu(tr("Context menu"), this);
 
   auto columnCount = this->model()->columnCount();
-  QAction openAction("Open", this);
+  QAction actionPreview("Preview", this);
   if (selectedCount == columnCount) {
-    connect(&openAction, &QAction::triggered, this, &AxpFileListView::openSelected);
-    contextMenu.addAction(&openAction);
+    connect(&actionPreview, &QAction::triggered, this, &AxpFileListView::openSelected);
+    contextMenu.addAction(&actionPreview);
     contextMenu.addSeparator();
   }
 
-  QAction extractSelectedAction("Extract selected item(s)", this);
-  connect(&extractSelectedAction, &QAction::triggered, this, &AxpFileListView::extractSelected);
-  contextMenu.addAction(&extractSelectedAction);
-
+  QAction actionExtractSelected("Extract selected item(s)", this);
+  connect(&actionExtractSelected, &QAction::triggered, this, &AxpFileListView::extractSelected);
+  contextMenu.addAction(&actionExtractSelected);
   contextMenu.addSeparator();
 
-  QAction deleteAction("Delete", this);
-  connect(&deleteAction, &QAction::triggered, this, &AxpFileListView::deleteSelected);
-  contextMenu.addAction(&deleteAction);
+  QAction actionDelete("Delete", this);
+  connect(&actionDelete, &QAction::triggered, this, &AxpFileListView::deleteSelected);
+  contextMenu.addAction(&actionDelete);
+  contextMenu.addSeparator();
 
-//  contextMenu.addSeparator();
+  QAction actionRevert("Revert", this);
+  connect(&actionRevert, &QAction::triggered, this, &AxpFileListView::revertSelected);
+  contextMenu.addAction(&actionRevert);
 
   contextMenu.exec(mapToGlobal(pos));
 }
@@ -88,14 +90,14 @@ void AxpFileListView::extractSelected() const
 
   auto extractFileFn = [axpArc, &targetDir](const std::string& axpItemName)->bool
   {
-      QString targetFileName = targetDir.filePath(QString::fromLocal8Bit(axpItemName.c_str()));
+    QString targetFileName = targetDir.filePath(QString::fromLocal8Bit(axpItemName.c_str()));
 
-      if (!axpArc->extractToDisk(axpItemName, targetFileName.toLocal8Bit().data())) {
-        LOG(targetFileName << ": Write error");
-        return false;
-      }
+    if (!axpArc->extractToDisk(axpItemName, targetFileName.toLocal8Bit().data())) {
+      LOG(targetFileName << ": Write error");
+      return false;
+    }
 
-      return true;
+    return true;
   };
 
   int itemsSize = items.size();
@@ -108,7 +110,7 @@ void AxpFileListView::extractSelected() const
     auto columnCount = item.model()->columnCount();
     emit mainWindow->invoke([=](){
       mainWindow->setProgress(axpKey, static_cast<std::size_t>(i / columnCount + 1),
-          static_cast<std::size_t>(itemsSize / columnCount));
+                              static_cast<std::size_t>(itemsSize / columnCount));
     });
 
     std::string itemKey = std::string(axpKey.toLocal8Bit());
@@ -194,13 +196,13 @@ void AxpFileListView::openSelected()
     imgDlg->setWindowTitle(QString("%1 (%2 x %3)").arg(QFileInfo(itemKey).fileName()).arg(pxSize.width()).arg(pxSize.height()));
     imgDlg->setAlignment(Qt::AlignCenter);
     imgDlg->setGeometry(
-      QStyle::alignedRect(
-        Qt::LeftToRight,
-        Qt::AlignCenter,
-        imgDlg->size(),
-        desktop->availableGeometry()
-      )
-    );
+          QStyle::alignedRect(
+            Qt::LeftToRight,
+            Qt::AlignCenter,
+            imgDlg->size(),
+            desktop->availableGeometry()
+            )
+          );
 
     imgDlg->setPixmap(pxmap);
     imgDlg->show();
@@ -210,9 +212,9 @@ void AxpFileListView::openSelected()
 
     QString fileName(dir.path() + '/' + itemKey);
     if (axpArc->extractToDisk(fKey, fileName.toLocal8Bit().data())) {
-//      QMimeDatabase db;
-//      QMimeType mime = db.mimeTypeForFile(fileName, QMimeDatabase::MatchContent);
-//      LOG_DEBUG(__FUNCTION__ << mime);
+      //      QMimeDatabase db;
+      //      QMimeType mime = db.mimeTypeForFile(fileName, QMimeDatabase::MatchContent);
+      //      LOG_DEBUG(__FUNCTION__ << mime);
       if (reinterpret_cast<int>(ShellExecute(GetDesktopWindow(), "open", fileName.toLocal8Bit().data(), "", "", 1)) < 32)
       {
         LOG_DEBUG(__FUNCTION__ << fileName << ": failed to open native app");
@@ -228,10 +230,29 @@ void AxpFileListView::deleteSelected()
 
   auto selectedItems = this->selectedIndexes();
 
+  auto& fileList = axpArc->getFileList();
   for (const auto& item : selectedItems) {
-    LOG_DEBUG(__FUNCTION__ << item);
-    axpArc->removeFile(item.data(AxpItem::ItemKeyRole).toString().toStdString());
+    LOG_DEBUG(__FUNCTION__ << item << item.column() << item.row());
+    if (item.column() != 0)
+    {
+      continue;
+    }
+    AxpArchivePort::FileName fileName = item.data(AxpItem::ItemKeyRole).toString().toStdString();
+    auto& fileListItem = fileList[fileName];
+    if (fileListItem.status == AxpArchivePort::FileListData::FileStatus::NEW)
+    {
+      fileList.erase(fileName);
+    }
+    else
+    {
+      fileListItem.status = AxpArchivePort::FileListData::FileStatus::DELETED;
+    }
   }
+}
+
+void AxpFileListView::revertSelected()
+{
+
 }
 
 void AxpFileListView::dropEvent(QDropEvent* event)

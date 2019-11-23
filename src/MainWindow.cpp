@@ -31,6 +31,8 @@ MainWindow::MainWindow(QWidget *parent) :
 
   LOG_DEBUG(__FUNCTION__ << QThread::currentThread());
   ui->setupUi(this);
+  ui->splitter->setStretchFactor(0, 0);
+  ui->splitter->setStretchFactor(1, 1);
 
   m_axpArchive = new AxpArchivePort;
   m_dirModel = new QStandardItemModel(ui->dirList);
@@ -123,8 +125,8 @@ void MainWindow::openAxpArchive(const QString &fileName)
   m_dirModel->clear();
   m_axpArchive->close();
 
-  m_axpArchive->setFileName(fileName);
-  m_axpArchive->setFileEditable(false);
+  m_axpArchive->setAxpArchiveFileName(fileName);
+  m_axpArchive->setAxpArchiveFileEditable(false);
 
   m_axpArchive->setProgressCallback([this](auto fileName, auto cur, auto total) {
     QString qStringFileName = QString::fromLocal8Bit(fileName.data());
@@ -159,7 +161,13 @@ void MainWindow::openAxpArchive(const QString &fileName)
                              .arg(m_axpArchive->getLastErrorMessage())
                              .arg(fileName));
         m_axpArchive->close();
+        return;
       }
+
+      ui->actionSave->setDisabled(false);
+      ui->actionSave_As->setDisabled(false);
+      ui->actionExtract_All_Data->setDisabled(false);
+      ui->actionAdd_File->setDisabled(false);
     });
   });
 }
@@ -279,17 +287,45 @@ void MainWindow::setCurrentDir(const QModelIndex &index)
         items.append(item);
         LOG_DEBUG("setCurrentDir::Thread" << "item.append 1");
 
-#if 0
-        auto sizeItem = new QStandardItem(
-              !isDir ?
-                QLocale(QLocale::English).toString(static_cast<double>(fileInfo.second.blockTableNode->size), 'f', 0) + " B" :
-                "");
+        auto sizeItem = new QStandardItem();
+        if (!isDir)
+        {
+          sizeItem->setText(
+                QLocale(QLocale::English).toString(static_cast<double>(fileInfo.second.size), 'f', 0) + " B"
+                );
+        }
         sizeItem->setTextAlignment(Qt::AlignVCenter | Qt::AlignRight);
         items.append(sizeItem);
-#endif
         LOG_DEBUG("setCurrentDir::Thread" << "item.append 2");
 
-        auto statusItem = new QStandardItem("Original");
+        auto statusItem = new QStandardItem();
+        QString statusTxt;
+        switch (fileInfo.second.status)
+        {
+          case AxpArchivePort::FileListData::FileStatus::NEW:
+            statusItem->setForeground(Qt::green);
+            statusTxt = "New";
+            break;
+
+          case AxpArchivePort::FileListData::FileStatus::DELETED:
+            statusItem->setForeground(Qt::red);
+            statusTxt = "Deleted";
+            break;
+
+          case AxpArchivePort::FileListData::FileStatus::MODIFIED:
+            statusItem->setForeground(Qt::yellow);
+            statusTxt = "Modified";
+            break;
+
+          case AxpArchivePort::FileListData::FileStatus::ORIGIN:
+            statusItem->setForeground(Qt::white);
+            statusTxt = "Origin";
+            break;
+
+          default:
+            statusTxt = "Unknown";
+        }
+        statusItem->setText(statusTxt);
         statusItem->setTextAlignment(Qt::AlignCenter);
         items.append(statusItem);
         LOG_DEBUG("setCurrentDir::Thread" << "item.append 3");
@@ -332,15 +368,14 @@ void MainWindow::on_actionExtract_All_Data_triggered()
   auto m_extractItemListThread = new QThread(this);
   connect(m_extractItemListThread, &QThread::started, [=](){
     LOG_DEBUG("Extract ThreadID:" << QThread::currentThread());
-#if 0
-    QFileInfo fileInfo(m_axpFile->getArchiveFileName());
+    QFileInfo fileInfo(m_axpArchive->getArchiveFileName());
     QDir targetDir(opennedPath + '/' + fileInfo.fileName() + "-Output");
     if (!targetDir.exists())
     {
       targetDir.mkpath(".");
     }
 
-    auto& m_fileList = m_axpFile->getFileList();
+    auto& m_fileList = m_axpArchive->getFileList();
 
     uint32_t i = 0;
     for (const auto& fileInfo : m_fileList)
@@ -354,7 +389,7 @@ void MainWindow::on_actionExtract_All_Data_triggered()
 
       auto toFileName(targetDir.filePath(fname));
 
-      if (!m_axpFile->extractToDisk(fKeyName, toFileName.toLocal8Bit().data())) {
+      if (!m_axpArchive->extractToDisk(fKeyName, toFileName.toLocal8Bit().data())) {
         LOG_DEBUG("Write error");
       }
     }
@@ -363,7 +398,6 @@ void MainWindow::on_actionExtract_All_Data_triggered()
     if (targetDir.exists()) {
       QDesktopServices::openUrl(targetDir.path());
     }
-#endif
     m_extractItemListThread->quit();
   });
   m_extractItemListThread->start();
@@ -386,16 +420,33 @@ void MainWindow::on_actionAdd_File_triggered()
         );
   LOG_DEBUG(opennedPaths);
 
-  for (const auto& fileName : opennedPaths)
+  auto& fileList = m_axpArchive->getFileList();
+  for (const auto& q_diskFileName : opennedPaths)
   {
     auto selectedPath = this->getSelectedDirAxpKey();
-    QFileInfo fileInfo(fileName);
-#if 0
-    m_axpFile->insertDiskFile(fileName.toLocal8Bit().data(),
-                              ((selectedPath == "") || (selectedPath == "/"))
+    QFileInfo fileInfo(q_diskFileName);
+    if (!fileInfo.exists())
+    {
+      continue;
+    }
+    AxpArchivePort::FileName diskFileName = q_diskFileName.toLocal8Bit().data();
+    AxpArchivePort::FileName fileName = ((selectedPath == "") || (selectedPath == "/"))
                               ? fileInfo.fileName().toLocal8Bit().data()
-                              : QDir(selectedPath).filePath(fileInfo.fileName()).toLocal8Bit().data());
-#endif
+                              : QDir(selectedPath).filePath(fileInfo.fileName()).toLocal8Bit().data();
+    auto& fileListItem = fileList[fileName];
+    switch (fileListItem.status)
+    {
+      case AxpArchivePort::FileListData::FileStatus::UNKNOWN:
+      case AxpArchivePort::FileListData::FileStatus::NEW:
+        fileListItem.status = AxpArchivePort::FileListData::FileStatus::NEW;
+        break;
+
+      default:
+        fileListItem.status = AxpArchivePort::FileListData::FileStatus::MODIFIED;
+    }
+
+    fileListItem.nameFromDisk = diskFileName;
+    fileListItem.size = AXP::getDiskFileSize(diskFileName.data());
   }
 }
 

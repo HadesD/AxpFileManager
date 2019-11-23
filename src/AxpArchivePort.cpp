@@ -91,22 +91,28 @@ bool AxpArchivePort::extractToDisk(const AxpArchivePort::FileName& fileName, con
   return true;
 }
 
-bool AxpArchivePort::removeFile(const AxpArchivePort::FileName& fileName)
+bool AxpArchivePort::insertDiskFile(const AxpArchivePort::FileName& diskFileName, const AxpArchivePort::FileName& fileName, const bool saveAtOnce)
 {
-  return m_pPakFile->removeFile(fileName.data(), m_editable);
+  return m_pPakFile->insertContents(diskFileName.data(), 0, fileName.data(), AXP::AXP_CONTENTS::AC_DISKFILE, saveAtOnce);
+}
+
+bool AxpArchivePort::removeFile(const AxpArchivePort::FileName& fileName, const bool saveAtOnce)
+{
+  return m_pPakFile->removeFile(fileName.data(), saveAtOnce);
 }
 
 void AxpArchivePort::close()
 {
+  m_fileList.clear();
   m_pPakFile->closePakFile();
 }
 
-void AxpArchivePort::setFileName(const QString &fileName)
+void AxpArchivePort::setAxpArchiveFileName(const QString &fileName)
 {
   m_fileName = fileName;
 }
 
-void AxpArchivePort::setFileEditable(const bool editable)
+void AxpArchivePort::setAxpArchiveFileEditable(const bool editable)
 {
   m_editable = editable;
 }
@@ -176,7 +182,6 @@ void AxpArchivePort::startOpenAxpArchive(std::function<void ()> onStarted, std::
       const unsigned int nStreamSize = hFileStream->size();
       if(nStreamSize != nFileSize)
       {
-        hFileStream->close();
 //        setLastError(AXP::AXP_ERRORS::AXP_ERR_FILE_READ, "file=%s", c_strFileName);
         continue;
       }
@@ -189,7 +194,9 @@ void AxpArchivePort::startOpenAxpArchive(std::function<void ()> onStarted, std::
 //      }
 
       // Set arr
-      m_fileList[strFileName] = 1;
+      auto& fileListItem = m_fileList[strFileName];
+      fileListItem.size = nStreamSize;
+      fileListItem.status = FileListData::FileStatus::ORIGIN;
 
       if (m_progressUpdateCallback)
       {

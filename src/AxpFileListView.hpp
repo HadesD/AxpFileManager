@@ -22,6 +22,9 @@ class AxpFileListView : public QTableView
     void extractSelected() const;
     void openSelected();
     void deleteSelected();
+    void revertSelected();
+
+  protected:
     void dropEvent(QDropEvent* event) override;
 
   protected:
