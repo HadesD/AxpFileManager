@@ -2,6 +2,7 @@
 
 #include <AxpArchive.hpp>
 #include <QThread>
+#include <QTemporaryDir>
 #include <QDir>
 
 #include "Log.hpp"
@@ -101,6 +102,96 @@ bool AxpArchivePort::removeFile(const AxpArchivePort::FileName& fileName, const 
   return m_pPakFile->removeFile(fileName.data(), saveAtOnce);
 }
 
+bool AxpArchivePort::saveToDiskFile(const AxpArchivePort::FileName& toDiskFileName)
+{
+  LOG_DEBUG(__FUNCTION__ << "called");
+  const char* c_toDiskFileName = toDiskFileName.data();
+  QString q_toDiskFileName = QString::fromLocal8Bit(c_toDiskFileName);
+  if (!QDir(q_toDiskFileName).mkpath(".."))
+  {
+    LOG(__FUNCTION__ << "error make path");
+    return false;
+  }
+  if (QFile::exists(q_toDiskFileName))
+  {
+    if (!QFile::remove(q_toDiskFileName))
+    {
+      LOG(__FUNCTION__ << "error remove file");
+      return false;
+    }
+  }
+  if (!QFile::copy(m_fileName, q_toDiskFileName))
+  {
+    LOG(__FUNCTION__ << "error copy file");
+    return false;
+  }
+
+  std::unique_ptr<
+      AXP::IPakFile, std::function<void(AXP::IPakFile*)>
+      > packFile(AXP::createPakFile(), [](AXP::IPakFile* s){
+    AXP::destroyPakFile(s);
+  });
+  if (!packFile)
+  {
+    LOG(__FUNCTION__ << "error create Handle");
+    return false;
+  }
+  if (!packFile->openPakFile(c_toDiskFileName, false))
+  {
+    LOG(__FUNCTION__ << "error open file" << AXP::getLastErrorDesc());
+    QFile::remove(q_toDiskFileName);
+    return false;
+  }
+
+  for (const auto& fileListPair : m_fileList)
+  {
+    const auto& fileData = fileListPair.second;
+    const auto& nameFromDisk = fileData.nameFromDisk;
+
+    // Skip file not have edit flag
+    if (fileData.status == FileListData::FileStatus::ORIGIN)
+    {
+      continue;
+    }
+
+    const auto& fileName = fileListPair.first;
+    const char* c_fileName = fileName.data();
+    packFile->removeFile(c_fileName, true); // Delete everytime
+
+    if (fileData.status != FileListData::FileStatus::DELETED)
+    {
+      const char* c_nameFromDisk = nameFromDisk.data();
+      packFile->insertContents(c_nameFromDisk, 0, c_fileName, AXP::AXP_CONTENTS::AC_DISKFILE, true);
+    }
+  }
+
+  LOG_DEBUG(__FUNCTION__ << "completed");
+
+  return true;
+
+//  std::unique_ptr<
+//      AXP::IPakMaker, std::function<void(AXP::IPakMaker*)>
+//      > pakMaker(AXP::createPakMaker(), [](AXP::IPakMaker* s){
+//    AXP::destroyPakMaker(s);
+//  });
+//  if (!pakMaker)
+//  {
+//    return false;
+//  }
+
+//  QTemporaryDir tempDir;
+//  if (!tempDir.isValid())
+//  {
+//    return false;
+//  }
+//  for (const auto& fileListPair : m_fileList)
+//  {
+//    const auto& fileName = fileListPair.first;
+//  }
+
+//  return pakMaker->savePakFile(toDiskFileName.data(), nullptr);
+}
+
 void AxpArchivePort::close()
 {
   m_fileList.clear();
@@ -168,6 +259,12 @@ void AxpArchivePort::startOpenAxpArchive(std::function<void ()> onStarted, std::
       sscanf(vStringVec[2].c_str(), "%08X", &(nFileCRC));
 
       const char* c_strFileName = strFileName.c_str();
+
+      if (!m_pPakFile->isFileExists(c_strFileName))
+      {
+        LOG("AxpArchivePort::startOpenAxpArchive::Thread" << AXP::getLastErrorDesc());
+        continue;
+      }
 
       std::unique_ptr<
           AXP::IStream, std::function<void(AXP::IStream*)>

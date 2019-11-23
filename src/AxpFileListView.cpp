@@ -237,7 +237,7 @@ void AxpFileListView::deleteSelected()
     {
       continue;
     }
-    AxpArchivePort::FileName fileName = item.data(AxpItem::ItemKeyRole).toString().toStdString();
+    AxpArchivePort::FileName fileName = item.data(AxpItem::ItemKeyRole).toString().toLocal8Bit().data();
     auto& fileListItem = fileList[fileName];
     if (fileListItem.status == AxpArchivePort::FileListData::FileStatus::NEW)
     {
