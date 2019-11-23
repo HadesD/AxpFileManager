@@ -1,2 +1,10 @@
-*.pro.user
+*.pro.user*
 build-*
+src/*.vcxproj*
+src/.vs
+src/Win32/
+src/debug/
+src/release/
+src/ui_*.h
+src/Makefile*
+.editorconfig
