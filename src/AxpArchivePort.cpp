@@ -193,13 +193,13 @@ bool AxpArchivePort::saveToDiskFile(const AxpArchivePort::FileName& toDiskFileNa
   // Extract temp
   QString q_tempDirPath = tempDir.path();
   QDir qDir(q_tempDirPath);
-  std::size_t i = 0;
+  std::shared_ptr<std::size_t> i{new std::size_t};*i = 0;
   const std::size_t listSize = m_fileList.size();
   for (const auto& fileListPair : m_fileList)
   {
     const auto& fileName = fileListPair.first;
     const auto& fileListItemData = fileListPair.second;
-    ++i; if (m_progressUpdateCallback) m_progressUpdateCallback(fileName, i, listSize);
+    ++(*i); if (m_progressUpdateCallback) m_progressUpdateCallback(fileName, *i, listSize);
     switch (fileListItemData.status)
     {
       case FileListData::FileStatus::NEW:
@@ -224,7 +224,20 @@ bool AxpArchivePort::saveToDiskFile(const AxpArchivePort::FileName& toDiskFileNa
 
   pakMaker->addDiskFold(q_tempDirPath.toLocal8Bit().data(), "", "", true);
 
-  return pakMaker->savePakFile(toDiskFileName.data(), nullptr);
+  *i = 0;
+
+  bool saveRet = pakMaker->savePakFile(toDiskFileName.data(), [=](auto _1,auto _2,auto _3,auto _4)->bool{
+    Q_UNUSED(_1);
+    Q_UNUSED(_3);
+    Q_UNUSED(_4);
+    strncpy(_3, _1, _4);
+
+    ++(*i); if (m_progressUpdateCallback) m_progressUpdateCallback(_2, *i, listSize);
+
+    return true;
+  });
+
+  return saveRet;
 }
 
 void AxpArchivePort::close()
