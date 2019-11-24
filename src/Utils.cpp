@@ -53,48 +53,4 @@ namespace Utils {
   {
     return getExtIcon(ext, SHGFI_SMALLICON);
   }
-
-  std::string normaliseName(const std::string& fileName, bool toLowCase, bool norSlash)
-  {
-    if(fileName.empty() || (!norSlash && !toLowCase)) return fileName;
-
-    //°´ÕÕGBK±àÂë½øÐÐ´óÐ¡Ð´×ª»»
-    const unsigned char byANSIBegin_A	= 'A';
-    const unsigned char byANSIEnd_Z		= 'Z';
-
-    const unsigned char by1GBKBegin		= 0X81;
-    const unsigned char by1GBKEnd		= 0XFE;
-
-    std::string result = fileName;
-
-    uint nSize = result.size();
-    for(uint i = 0; i < nSize;)
-    {
-      unsigned char& byChar = reinterpret_cast<uchar&>(result[i]);
-
-      if(toLowCase && byChar >= byANSIBegin_A && byChar <= byANSIEnd_Z)
-      {
-        byChar += 'a'-'A';
-        i++;
-        continue;
-      }
-      // '\' -> '/'
-      else if(byChar == '\\' && norSlash)
-      {
-        byChar = '/';
-        i++;
-        continue;
-      }
-      else if(byChar >= by1GBKBegin && byChar <= by1GBKEnd)
-      {
-        i+=2;
-        continue;
-      }
-      else
-      {
-        i++;
-      }
-    }
-    return result;
-  }
 }

@@ -1395,6 +1395,7 @@ QDateEdit::down-arrow:focus {
     </property>
     <addaction name="actionOpen"/>
     <addaction name="actionNew"/>
+    <addaction name="actionNew_From_directory"/>
     <addaction name="separator"/>
     <addaction name="actionAdd_File"/>
     <addaction name="actionAdd_Folder"/>
@@ -1450,10 +1451,10 @@ QDateEdit::down-arrow:focus {
   </action>
   <action name="actionNew">
    <property name="text">
-    <string>New</string>
+    <string>New (Empty Axp)</string>
    </property>
    <property name="shortcut">
-    <string>Ctrl+N</string>
+    <string>Ctrl+Shift+N</string>
    </property>
   </action>
   <action name="actionAbout">
@@ -1488,6 +1489,14 @@ QDateEdit::down-arrow:focus {
    </property>
    <property name="text">
     <string>Add Folder</string>
+   </property>
+  </action>
+  <action name="actionNew_From_directory">
+   <property name="text">
+    <string>New (From directory)</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+N</string>
    </property>
   </action>
  </widget>

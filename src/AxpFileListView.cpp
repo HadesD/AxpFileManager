@@ -9,6 +9,9 @@
 #include <QDesktopServices>
 #include <QDesktopWidget>
 #include <qt_windows.h>
+#include <QMimeData>
+#include <QDrag>
+#include <QWindow>
 
 #include "MainWindow.hpp"
 #include "ui_MainWindow.h"
@@ -189,7 +192,7 @@ void AxpFileListView::openSelected()
     QSize minDlgSize(500, 300);
     QLabel* imgDlg = new CustomLabel(this);
     imgDlg->resize(
-          std::max(pxSize.width(), minDlgSize.width()),
+          std::max(pxmap.width(), minDlgSize.width()),
           std::max(pxSize.height(), minDlgSize.height())
           );
     imgDlg->setWindowFlags(Qt::Window);
@@ -238,15 +241,50 @@ void AxpFileListView::deleteSelected()
     {
       continue;
     }
-    AxpArchivePort::FileName fileName = item.data(AxpItem::ItemKeyRole).toString().toLocal8Bit().data();
-    auto& fileListItem = fileList[fileName];
-    if (fileListItem.status == AxpArchivePort::FileListData::FileStatus::NEW)
+    QString q_fileName = item.data(AxpItem::ItemKeyRole).toString();
+    AxpArchivePort::FileName fileName = q_fileName.toLocal8Bit().data();
+    bool isDir = q_fileName.at(q_fileName.size() - 1) == '/';
+    if (!isDir)
     {
-      fileList.erase(fileName);
+      auto& fileListData = fileList[fileName];
+      switch (fileListData.status)
+      {
+        case AxpArchivePort::FileListData::FileStatus::NEW:
+          fileList.erase(fileName);
+          break;
+
+        case AxpArchivePort::FileListData::FileStatus::UNKNOWN:
+          break;
+
+        default:
+          fileListData.status = AxpArchivePort::FileListData::FileStatus::DELETED;
+      }
     }
     else
     {
-      fileListItem.status = AxpArchivePort::FileListData::FileStatus::DELETED;
+      for (auto& fileListItem : fileList)
+      {
+        const auto& itemKeyName = fileListItem.first;
+        if (itemKeyName.find(fileName) != 0)
+        {
+          continue;
+        }
+
+        auto& fileListData = fileList[itemKeyName];
+
+        switch (fileListData.status)
+        {
+          case AxpArchivePort::FileListData::FileStatus::NEW:
+            fileList.erase(fileName);
+            break;
+
+          case AxpArchivePort::FileListData::FileStatus::UNKNOWN:
+            break;
+
+          default:
+            fileListData.status = AxpArchivePort::FileListData::FileStatus::DELETED;
+        }
+      }
     }
   }
 
@@ -268,19 +306,50 @@ void AxpFileListView::revertSelected()
     {
       continue;
     }
-    AxpArchivePort::FileName fileName = item.data(AxpItem::ItemKeyRole).toString().toLocal8Bit().data();
-    auto& fileListItem = fileList[fileName];
-    switch (fileListItem.status)
+    QString q_fileName = item.data(AxpItem::ItemKeyRole).toString();
+    AxpArchivePort::FileName fileName = q_fileName.toLocal8Bit().data();
+    bool isDir = q_fileName.at(q_fileName.size() - 1) == '/';
+    if (!isDir)
     {
-      case AxpArchivePort::FileListData::FileStatus::NEW:
-        fileList.erase(fileName);
-        break;
+      auto& fileListData = fileList[fileName];
+      switch (fileListData.status)
+      {
+        case AxpArchivePort::FileListData::FileStatus::NEW:
+          fileList.erase(fileName);
+          break;
 
-      case AxpArchivePort::FileListData::FileStatus::UNKNOWN:
-        break;
+        case AxpArchivePort::FileListData::FileStatus::UNKNOWN:
+          break;
 
-      default:
-        fileListItem.status = AxpArchivePort::FileListData::FileStatus::ORIGIN;
+        default:
+          fileListData.status = AxpArchivePort::FileListData::FileStatus::ORIGIN;
+      }
+    }
+    else
+    {
+      for (auto& fileListItem : fileList)
+      {
+        const auto& itemKeyName = fileListItem.first;
+        if (itemKeyName.find(fileName) != 0)
+        {
+          continue;
+        }
+
+        auto& fileListData = fileList[itemKeyName];
+
+        switch (fileListData.status)
+        {
+          case AxpArchivePort::FileListData::FileStatus::NEW:
+            fileList.erase(fileName);
+            break;
+
+          case AxpArchivePort::FileListData::FileStatus::UNKNOWN:
+            break;
+
+          default:
+            fileListData.status = AxpArchivePort::FileListData::FileStatus::ORIGIN;
+        }
+      }
     }
   }
 
@@ -289,12 +358,19 @@ void AxpFileListView::revertSelected()
 
 void AxpFileListView::dropEvent(QDropEvent* event)
 {
-  Q_UNUSED(event);
-  LOG_DEBUG(__FUNCTION__ << event);
+//  LOG_DEBUG(__FUNCTION__ << event);
+//  QTableView::dropEvent(event);
+}
+
+void AxpFileListView::dragEnterEvent(QDragEnterEvent* event)
+{
+//  LOG_DEBUG(__FUNCTION__ << "called");
+//  QTableView::dragEnterEvent(event);
 }
 
 void AxpFileListView::mouseMoveEvent(QMouseEvent *event)
 {
+//  LOG_DEBUG(__FUNCTION__ << "called");
   QTableView::mouseMoveEvent(event);
 
   QModelIndex index = indexAt(event->pos());
@@ -313,4 +389,9 @@ void AxpFileListView::mouseMoveEvent(QMouseEvent *event)
       update(model()->index(i, oldHoverColumn));
     }
   }
+}
+
+void AxpFileListView::mousePressEvent(QMouseEvent* event)
+{
+  QTableView::mousePressEvent(event);
 }

@@ -26,9 +26,9 @@ class AxpFileListView : public QTableView
 
   protected:
     void dropEvent(QDropEvent* event) override;
-
-  protected:
-    virtual void mouseMoveEvent(QMouseEvent *event) override;
+    void dragEnterEvent(QDragEnterEvent *event) override;
+    void mouseMoveEvent(QMouseEvent *event) override;
+    void mousePressEvent(QMouseEvent *event) override;
 
   private:
     int mHoverRow, mHoverColumn;

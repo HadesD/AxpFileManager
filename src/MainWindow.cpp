@@ -11,6 +11,7 @@
 #include <QMessageBox>
 #include <QThread>
 #include <QTimer>
+#include <QDirIterator>
 
 #include "AxpArchive.hpp"
 #include "AxpArchivePort.hpp"
@@ -229,7 +230,7 @@ void MainWindow::setProgress(const QString &name, const std::size_t current, con
 void MainWindow::on_actionOpen_triggered()
 {
   QString opennedPath = QFileDialog::getOpenFileName(
-        this, "Open File", nullptr, "Axp file (*.axp)"
+        this, "Open File", nullptr, tr("Axp archive (*.axp);;All Files (*)")
         );
   this->openAxpArchive(opennedPath);
 }
@@ -241,9 +242,21 @@ void MainWindow::on_actionAbout_triggered()
 
 void MainWindow::on_actionNew_triggered()
 {
-  QString fileName = QFileDialog::getSaveFileName(this,
-                                                  tr("Create new Axp archive file"), nullptr,
-                                                  tr("Axp archive (*.axp);;All Files (*)"));
+  QString opennedPath = QFileDialog::getSaveFileName(
+        this, tr("Create new Axp archive file"), nullptr,
+        tr("Axp archive (*.axp);;All Files (*)"));
+  if (opennedPath.isEmpty())
+  {
+    return;
+  }
+  m_axpArchive->close();
+
+  if (!m_axpArchive->saveToDiskFile(opennedPath.toLocal8Bit().data()))
+  {
+    return;
+  }
+
+  this->openAxpArchive(opennedPath);
 }
 
 void MainWindow::setCurrentDir(const QModelIndex &index)
@@ -268,6 +281,7 @@ void MainWindow::setCurrentDir(const QModelIndex &index)
     bool startedFound = false;
     QMap<QString, bool> addedItems;
     for (const auto& fileInfo : fileList) {
+      LOG_DEBUG("setCurrentDir::Thread" << "Loop start");
       auto& fKey = fileInfo.first;
       QString local8BitFileName = QString::fromLocal8Bit(fKey.c_str());
       if (isRoot || local8BitFileName.indexOf(parentKey) == 0) {
@@ -340,6 +354,7 @@ void MainWindow::setCurrentDir(const QModelIndex &index)
           break;
         }
       }
+      LOG_DEBUG("setCurrentDir::Thread" << "Loop end");
     }
 
     m_fileModel->sort(0);
@@ -453,7 +468,7 @@ void MainWindow::on_actionAdd_File_triggered()
   }
 
   // Update list view
-//  this->setCurrentDir(ui->dirList->currentIndex());
+  this->setCurrentDir(ui->dirList->currentIndex());
   LOG_DEBUG(__FUNCTION__ << "completed");
 }
 
@@ -463,6 +478,34 @@ void MainWindow::on_actionAdd_Folder_triggered()
   if (opennedPaths.isEmpty())
   {
     return;
+  }
+
+  LOG_DEBUG(__FUNCTION__ << opennedPaths);
+
+  QStringList pathArr = opennedPaths.split('/');
+  const auto& dirBaseName = pathArr.back();
+  const auto opennedPathSize = opennedPaths.size();
+
+  auto& fileList = m_axpArchive->getFileList();
+  QDirIterator itDir(opennedPaths, QDir::Files, QDirIterator::Subdirectories);
+  while (itDir.hasNext())
+  {
+    const auto& diskFileName = itDir.next();
+//    LOG_DEBUG(__FUNCTION__ << diskFileName);
+    const AxpArchivePort::FileName fileName = (dirBaseName + diskFileName.mid(opennedPathSize)).toLocal8Bit().data();
+    LOG_DEBUG(__FUNCTION__ << fileName.data());
+
+    auto& fileListItem = fileList[fileName];
+    switch (fileListItem.status)
+    {
+      case AxpArchivePort::FileListData::FileStatus::UNKNOWN:
+      case AxpArchivePort::FileListData::FileStatus::NEW:
+        fileListItem.status = AxpArchivePort::FileListData::FileStatus::NEW;
+        break;
+
+      default:
+        fileListItem.status = AxpArchivePort::FileListData::FileStatus::MODIFIED;
+    }
   }
 
   // Update list view
@@ -476,4 +519,56 @@ void MainWindow::on_actionSave_As_triggered()
   {
     LOG_DEBUG(__FUNCTION__ << AXP::getLastErrorDesc());
   }
+}
+
+void MainWindow::on_actionNew_From_directory_triggered()
+{
+  auto opennedPath = QFileDialog::getExistingDirectory(this, "Choose folder to create new Axp");
+  if (opennedPath.isEmpty())
+  {
+    return;
+  }
+
+  auto opennedPathSave = QFileDialog::getSaveFileName(this);
+  if (opennedPathSave.isEmpty())
+  {
+    return;
+  }
+
+  m_axpArchive->close();
+
+  QStringList pathArr = opennedPath.split('/');
+  const auto opennedPathSize = opennedPath.size();
+
+  auto& fileList = m_axpArchive->getFileList();
+  QDirIterator itDir(opennedPath, QDir::Files, QDirIterator::Subdirectories);
+  while (itDir.hasNext())
+  {
+    const auto& diskFileName = itDir.next();
+//    LOG_DEBUG(__FUNCTION__ << diskFileName);
+    const AxpArchivePort::FileName fileName = (diskFileName.mid(opennedPathSize + 1)).toLocal8Bit().data();
+    LOG_DEBUG(__FUNCTION__ << fileName.data());
+
+    auto& fileListItem = fileList[fileName];
+    switch (fileListItem.status)
+    {
+      case AxpArchivePort::FileListData::FileStatus::UNKNOWN:
+      case AxpArchivePort::FileListData::FileStatus::NEW:
+        fileListItem.status = AxpArchivePort::FileListData::FileStatus::NEW;
+        break;
+
+      default:
+        fileListItem.status = AxpArchivePort::FileListData::FileStatus::MODIFIED;
+    }
+    fileListItem.nameFromDisk = diskFileName.toLocal8Bit().data();
+//    fileListItem.size =
+  }
+
+  if (!m_axpArchive->saveToDiskFile(opennedPathSave.toLocal8Bit().data()))
+  {
+    LOG(__FUNCTION__ << "error" << m_axpArchive->getLastErrorMessage());
+    return;
+  }
+
+  this->openAxpArchive(opennedPathSave);
 }

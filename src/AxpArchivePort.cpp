@@ -174,27 +174,54 @@ bool AxpArchivePort::saveToDiskFile(const AxpArchivePort::FileName& toDiskFileNa
   return true;
 #endif
 
-//  std::unique_ptr<
-//      AXP::IPakMaker, std::function<void(AXP::IPakMaker*)>
-//      > pakMaker(AXP::createPakMaker(), [](AXP::IPakMaker* s){
-//    AXP::destroyPakMaker(s);
-//  });
-//  if (!pakMaker)
-//  {
-//    return false;
-//  }
+  std::unique_ptr<
+      AXP::IPakMaker, std::function<void(AXP::IPakMaker*)>
+      > pakMaker(AXP::createPakMaker(), [](AXP::IPakMaker* s){
+    AXP::destroyPakMaker(s);
+  });
+  if (!pakMaker)
+  {
+    return false;
+  }
 
-//  QTemporaryDir tempDir;
-//  if (!tempDir.isValid())
-//  {
-//    return false;
-//  }
-//  for (const auto& fileListPair : m_fileList)
-//  {
-//    const auto& fileName = fileListPair.first;
-//  }
+  QTemporaryDir tempDir;
+  if (!tempDir.isValid())
+  {
+    return false;
+  }
 
-//  return pakMaker->savePakFile(toDiskFileName.data(), nullptr);
+  // Extract temp
+  QString q_tempDirPath = tempDir.path();
+  QDir qDir(q_tempDirPath);
+  for (const auto& fileListPair : m_fileList)
+  {
+    const auto& fileName = fileListPair.first;
+    const auto& fileListItemData = fileListPair.second;
+    switch (fileListItemData.status)
+    {
+      case FileListData::FileStatus::NEW:
+        if (!fileListItemData.nameFromDisk.empty())
+        {
+          pakMaker->addDiskFile(fileListItemData.nameFromDisk.data(), fileName.data());
+        }
+        continue;
+      case FileListData::FileStatus::UNKNOWN:
+      case FileListData::FileStatus::DELETED:
+        continue;
+
+      default:
+        break;
+    }
+    if (!this->extractToDisk(fileName, qDir.filePath(fileName.data()).toLocal8Bit().data()))
+    {
+      LOG_DEBUG(__FUNCTION__ << "error extract" << fileName.data());
+      continue;
+    }
+  }
+
+  pakMaker->addDiskFold(q_tempDirPath.toLocal8Bit().data(), "", "", true);
+
+  return pakMaker->savePakFile(toDiskFileName.data(), nullptr);
 }
 
 void AxpArchivePort::close()
