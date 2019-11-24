@@ -119,6 +119,7 @@ void MainWindow::openAxpArchive(const QString &fileName)
   ui->actionSave_As->setDisabled(true);
   ui->actionExtract_All_Data->setDisabled(true);
   ui->actionAdd_File->setDisabled(true);
+  ui->actionAdd_Folder->setDisabled(true);
 
   // CLose first
   m_fileModel->removeRows(0, m_fileModel->rowCount());
@@ -168,6 +169,7 @@ void MainWindow::openAxpArchive(const QString &fileName)
       ui->actionSave_As->setDisabled(false);
       ui->actionExtract_All_Data->setDisabled(false);
       ui->actionAdd_File->setDisabled(false);
+      ui->actionAdd_Folder->setDisabled(false);
     });
   });
 }
@@ -360,7 +362,7 @@ void MainWindow::on_actionExtract_All_Data_triggered()
     return;
   }
 
-  QString opennedPath = QFileDialog::getExistingDirectory(this);
+  QString opennedPath = QFileDialog::getExistingDirectory(this, "Choose folder to save extract file(s)");
   if (opennedPath.isEmpty()) {
     return;
   }
@@ -415,10 +417,11 @@ void MainWindow::on_workingPathLabel_linkActivated(const QString &link)
 
 void MainWindow::on_actionAdd_File_triggered()
 {
+  LOG_DEBUG(__FUNCTION__ << "called");
   auto opennedPaths = QFileDialog::getOpenFileNames(
         this, "Choose file(s) to add", nullptr, "All files (*)"
         );
-  LOG_DEBUG(opennedPaths);
+  LOG_DEBUG(__FUNCTION__ << opennedPaths);
 
   auto& fileList = m_axpArchive->getFileList();
   for (const auto& q_diskFileName : opennedPaths)
@@ -448,13 +451,29 @@ void MainWindow::on_actionAdd_File_triggered()
     fileListItem.nameFromDisk = diskFileName;
     fileListItem.size = AXP::getDiskFileSize(diskFileName.data());
   }
+
+  // Update list view
+//  this->setCurrentDir(ui->dirList->currentIndex());
+  LOG_DEBUG(__FUNCTION__ << "completed");
+}
+
+void MainWindow::on_actionAdd_Folder_triggered()
+{
+  auto opennedPaths = QFileDialog::getExistingDirectory(this, "Choose folder to add");
+  if (opennedPaths.isEmpty())
+  {
+    return;
+  }
+
+  // Update list view
+  this->setCurrentDir(ui->dirList->currentIndex());
 }
 
 void MainWindow::on_actionSave_As_triggered()
 {
   auto opennedPaths = QFileDialog::getSaveFileName(this);
-  if (m_axpArchive->saveToDiskFile(opennedPaths.toLocal8Bit().data()))
+  if (!m_axpArchive->saveToDiskFile(opennedPaths.toLocal8Bit().data()))
   {
-
+    LOG_DEBUG(__FUNCTION__ << AXP::getLastErrorDesc());
   }
 }

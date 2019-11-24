@@ -1395,7 +1395,9 @@ QDateEdit::down-arrow:focus {
     </property>
     <addaction name="actionOpen"/>
     <addaction name="actionNew"/>
+    <addaction name="separator"/>
     <addaction name="actionAdd_File"/>
+    <addaction name="actionAdd_Folder"/>
     <addaction name="separator"/>
     <addaction name="actionExtract_All_Data"/>
     <addaction name="separator"/>
@@ -1477,7 +1479,15 @@ QDateEdit::down-arrow:focus {
     <bool>false</bool>
    </property>
    <property name="text">
-    <string>Add Files</string>
+    <string>Add File(s)</string>
+   </property>
+  </action>
+  <action name="actionAdd_Folder">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Add Folder</string>
    </property>
   </action>
  </widget>
@@ -1494,6 +1504,10 @@ QDateEdit::down-arrow:focus {
    <header location="global">AxpDirListView.hpp</header>
   </customwidget>
  </customwidgets>
+ <tabstops>
+  <tabstop>fileList</tabstop>
+  <tabstop>dirList</tabstop>
+ </tabstops>
  <resources/>
  <connections/>
 </ui>

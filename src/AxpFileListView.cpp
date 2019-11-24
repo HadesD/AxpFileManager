@@ -226,7 +226,8 @@ void AxpFileListView::openSelected()
 void AxpFileListView::deleteSelected()
 {
   LOG_DEBUG(__FUNCTION__ << "called");
-  const auto& axpArc = MainWindow::getInstance()->getAxpArchive();
+  const auto& mainWnd = MainWindow::getInstance();
+  const auto& axpArc = mainWnd->getAxpArchive();
 
   auto selectedItems = this->selectedIndexes();
 
@@ -248,11 +249,42 @@ void AxpFileListView::deleteSelected()
       fileListItem.status = AxpArchivePort::FileListData::FileStatus::DELETED;
     }
   }
+
+  mainWnd->setCurrentDir(mainWnd->getUi()->dirList->currentIndex());
 }
 
 void AxpFileListView::revertSelected()
 {
+  LOG_DEBUG(__FUNCTION__ << "called");
+  const auto& mainWnd = MainWindow::getInstance();
+  const auto& axpArc = mainWnd->getAxpArchive();
 
+  auto selectedItems = this->selectedIndexes();
+
+  auto& fileList = axpArc->getFileList();
+  for (const auto& item : selectedItems) {
+    LOG_DEBUG(__FUNCTION__ << item << item.column() << item.row());
+    if (item.column() != 0)
+    {
+      continue;
+    }
+    AxpArchivePort::FileName fileName = item.data(AxpItem::ItemKeyRole).toString().toLocal8Bit().data();
+    auto& fileListItem = fileList[fileName];
+    switch (fileListItem.status)
+    {
+      case AxpArchivePort::FileListData::FileStatus::NEW:
+        fileList.erase(fileName);
+        break;
+
+      case AxpArchivePort::FileListData::FileStatus::UNKNOWN:
+        break;
+
+      default:
+        fileListItem.status = AxpArchivePort::FileListData::FileStatus::ORIGIN;
+    }
+  }
+
+  mainWnd->setCurrentDir(mainWnd->getUi()->dirList->currentIndex());
 }
 
 void AxpFileListView::dropEvent(QDropEvent* event)

@@ -62,6 +62,8 @@ class MainWindow : public QMainWindow
 
     void on_actionSave_As_triggered();
 
+    void on_actionAdd_Folder_triggered();
+
   private:
     Ui::MainWindow *ui;
     AxpArchivePort* m_axpArchive;

@@ -112,6 +112,7 @@ bool AxpArchivePort::saveToDiskFile(const AxpArchivePort::FileName& toDiskFileNa
     LOG(__FUNCTION__ << "error make path");
     return false;
   }
+#if 0
   if (QFile::exists(q_toDiskFileName))
   {
     if (!QFile::remove(q_toDiskFileName))
@@ -156,7 +157,10 @@ bool AxpArchivePort::saveToDiskFile(const AxpArchivePort::FileName& toDiskFileNa
 
     const auto& fileName = fileListPair.first;
     const char* c_fileName = fileName.data();
-    packFile->removeFile(c_fileName, true); // Delete everytime
+    if (packFile->isFileExists(c_fileName))
+    {
+      packFile->removeFile(c_fileName, true); // Delete everytime
+    }
 
     if (fileData.status != FileListData::FileStatus::DELETED)
     {
@@ -168,6 +172,7 @@ bool AxpArchivePort::saveToDiskFile(const AxpArchivePort::FileName& toDiskFileNa
   LOG_DEBUG(__FUNCTION__ << "completed");
 
   return true;
+#endif
 
 //  std::unique_ptr<
 //      AXP::IPakMaker, std::function<void(AXP::IPakMaker*)>
