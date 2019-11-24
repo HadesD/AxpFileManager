@@ -193,10 +193,13 @@ bool AxpArchivePort::saveToDiskFile(const AxpArchivePort::FileName& toDiskFileNa
   // Extract temp
   QString q_tempDirPath = tempDir.path();
   QDir qDir(q_tempDirPath);
+  std::size_t i = 0;
+  const std::size_t listSize = m_fileList.size();
   for (const auto& fileListPair : m_fileList)
   {
     const auto& fileName = fileListPair.first;
     const auto& fileListItemData = fileListPair.second;
+    ++i; if (m_progressUpdateCallback) m_progressUpdateCallback(fileName, i, listSize);
     switch (fileListItemData.status)
     {
       case FileListData::FileStatus::NEW:

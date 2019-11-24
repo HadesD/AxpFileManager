@@ -166,7 +166,7 @@ void MainWindow::openAxpArchive(const QString &fileName)
         return;
       }
 
-      ui->actionSave->setDisabled(false);
+//      ui->actionSave->setDisabled(false);
       ui->actionSave_As->setDisabled(false);
       ui->actionExtract_All_Data->setDisabled(false);
       ui->actionAdd_File->setDisabled(false);
@@ -264,7 +264,7 @@ void MainWindow::setCurrentDir(const QModelIndex &index)
   LOG_DEBUG(__FUNCTION__ << "called");
   static QMutex lock;
   ui->dirList->setDisabled(true);
-  QThread* setCurDirThread = new QThread(this);
+  QThread* setCurDirThread = new QThread();
   connect(setCurDirThread, &QThread::started, [=](auto) {
     LOG_DEBUG("setCurrentDir::Thread" << "called");
     lock.lock();
@@ -537,38 +537,58 @@ void MainWindow::on_actionNew_From_directory_triggered()
 
   m_axpArchive->close();
 
-  QStringList pathArr = opennedPath.split('/');
-  const auto opennedPathSize = opennedPath.size();
+  QThread* saveThread = new QThread;
+  connect(saveThread, &QThread::started, [=](){
+    QStringList pathArr = opennedPath.split('/');
+    const auto opennedPathSize = opennedPath.size();
 
-  auto& fileList = m_axpArchive->getFileList();
-  QDirIterator itDir(opennedPath, QDir::Files, QDirIterator::Subdirectories);
-  while (itDir.hasNext())
-  {
-    const auto& diskFileName = itDir.next();
-//    LOG_DEBUG(__FUNCTION__ << diskFileName);
-    const AxpArchivePort::FileName fileName = (diskFileName.mid(opennedPathSize + 1)).toLocal8Bit().data();
-    LOG_DEBUG(__FUNCTION__ << fileName.data());
-
-    auto& fileListItem = fileList[fileName];
-    switch (fileListItem.status)
+    auto& fileList = m_axpArchive->getFileList();
+    QDirIterator itDir(opennedPath, QDir::Files, QDirIterator::Subdirectories);
+    while (itDir.hasNext())
     {
-      case AxpArchivePort::FileListData::FileStatus::UNKNOWN:
-      case AxpArchivePort::FileListData::FileStatus::NEW:
-        fileListItem.status = AxpArchivePort::FileListData::FileStatus::NEW;
-        break;
+      const auto& diskFileName = itDir.next();
+      //    LOG_DEBUG(__FUNCTION__ << diskFileName);
+      const AxpArchivePort::FileName fileName = (diskFileName.mid(opennedPathSize + 1)).toLocal8Bit().data();
+      LOG_DEBUG(__FUNCTION__ << fileName.data());
 
-      default:
-        fileListItem.status = AxpArchivePort::FileListData::FileStatus::MODIFIED;
+      auto& fileListItem = fileList[fileName];
+      switch (fileListItem.status)
+      {
+        case AxpArchivePort::FileListData::FileStatus::UNKNOWN:
+        case AxpArchivePort::FileListData::FileStatus::NEW:
+          fileListItem.status = AxpArchivePort::FileListData::FileStatus::NEW;
+          break;
+
+        default:
+          fileListItem.status = AxpArchivePort::FileListData::FileStatus::MODIFIED;
+      }
+      fileListItem.nameFromDisk = diskFileName.toLocal8Bit().data();
+      //    fileListItem.size =
     }
-    fileListItem.nameFromDisk = diskFileName.toLocal8Bit().data();
-//    fileListItem.size =
-  }
 
-  if (!m_axpArchive->saveToDiskFile(opennedPathSave.toLocal8Bit().data()))
-  {
-    LOG(__FUNCTION__ << "error" << m_axpArchive->getLastErrorMessage());
-    return;
-  }
+    m_axpArchive->setProgressCallback([this](auto fileName, auto cur, auto total) {
+      QString qStringFileName = QString::fromLocal8Bit(fileName.data());
+      emit this->invoke([=](){
+        this->setProgress(qStringFileName, cur, total);
+      });
+//      this->onAxpReadListProgress(qStringFileName, cur, total);
+    });
 
-  this->openAxpArchive(opennedPathSave);
+    if (!m_axpArchive->saveToDiskFile(opennedPathSave.toLocal8Bit().data()))
+    {
+      LOG(__FUNCTION__ << "error" << m_axpArchive->getLastErrorMessage());
+      saveThread->quit();
+      return;
+    }
+
+    // TODO: Will be crash here
+    emit this->invoke([=](){
+      this->openAxpArchive(opennedPathSave);
+    });
+    saveThread->quit();
+  });
+  connect(saveThread, &QThread::finished, [=](){
+    saveThread->deleteLater();
+  });
+  saveThread->start();
 }
