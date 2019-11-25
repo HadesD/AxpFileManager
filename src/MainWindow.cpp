@@ -521,19 +521,16 @@ void MainWindow::on_actionAdd_Folder_triggered()
 
 void MainWindow::on_actionSave_As_triggered()
 {
-  auto opennedPaths = QFileDialog::getSaveFileName(this);
+  auto opennedPaths = QFileDialog::getSaveFileName(this, "Save File...", QFileInfo(m_axpArchive->getArchiveFileName()).fileName());
   QThread* saveThread = new QThread;
   connect(saveThread, &QThread::started, [=](){
-    if (m_axpArchive->isModified())
+    if (m_axpArchive->saveToDiskFile(opennedPaths.toLocal8Bit().data()))
     {
-      if (m_axpArchive->saveToDiskFile(opennedPaths.toLocal8Bit().data()))
-      {
-        QDesktopServices::openUrl(QFileInfo(opennedPaths).path());
-      }
-      else
-      {
-        LOG(__FUNCTION__ << m_axpArchive->getLastErrorMessage());
-      }
+      QDesktopServices::openUrl(QFileInfo(opennedPaths).path());
+    }
+    else
+    {
+      LOG(__FUNCTION__ << m_axpArchive->getLastErrorMessage());
     }
     saveThread->deleteLater();
     saveThread->quit();
@@ -549,7 +546,7 @@ void MainWindow::on_actionNew_From_directory_triggered()
     return;
   }
 
-  auto opennedPathSave = QFileDialog::getSaveFileName(this);
+  auto opennedPathSave = QFileDialog::getSaveFileName(this, "Save File...", "NewArchive.axp");
   if (opennedPathSave.isEmpty())
   {
     return;
@@ -598,6 +595,9 @@ void MainWindow::on_actionNew_From_directory_triggered()
       return;
     }
 
+    // Prevent ask
+    m_axpArchive->close();
+
     emit this->invoke([=](){
       this->openAxpArchive(opennedPathSave);
     });
@@ -614,15 +614,18 @@ void MainWindow::on_actionSave_triggered()
   auto opennedPaths = m_axpArchive->getArchiveFileName();
   QThread* saveThread = new QThread;
   connect(saveThread, &QThread::started, [=](){
-    if (m_axpArchive->saveToDiskFile(opennedPaths.toLocal8Bit().data()))
+    if (m_axpArchive->isModified())
     {
-      emit this->invoke([=](){
-        this->openAxpArchive(opennedPaths);
-      });
-    }
-    else
-    {
-      LOG(__FUNCTION__ << m_axpArchive->getLastErrorMessage());
+      if (m_axpArchive->saveToDiskFile(opennedPaths.toLocal8Bit().data()))
+      {
+        emit this->invoke([=](){
+          this->openAxpArchive(opennedPaths);
+        });
+      }
+      else
+      {
+        LOG(__FUNCTION__ << m_axpArchive->getLastErrorMessage());
+      }
     }
     saveThread->deleteLater();
     saveThread->quit();
