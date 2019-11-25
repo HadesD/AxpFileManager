@@ -99,15 +99,6 @@ void MainWindow::openAxpArchive(const QString &fileName)
     return;
   }
 
-  if (m_axpArchive->isModified())
-  {
-    auto retMsg = QMessageBox::question(this, "Confirm discard modified", "You have unsave changes!\n\nDo you want to discard?");
-    if (retMsg != QMessageBox::StandardButton::Yes)
-    {
-      return;
-    }
-  }
-
   this->closeOpenningAxp();
 
   m_axpArchive->setAxpArchiveFileName(fileName);
@@ -213,6 +204,15 @@ void MainWindow::setProgress(const QString &name, const std::size_t current, con
 
 void MainWindow::closeOpenningAxp()
 {
+  if (m_axpArchive->isModified())
+  {
+    auto retMsg = QMessageBox::question(this, "Confirm discard modified", "You have unsave changes!\n\nDo you want to discard?");
+    if (retMsg != QMessageBox::StandardButton::Yes)
+    {
+      return;
+    }
+  }
+
   ui->actionSave->setDisabled(true);
   ui->actionSave_As->setDisabled(true);
   ui->actionExtract_All_Data->setDisabled(true);
