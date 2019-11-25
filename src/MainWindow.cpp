@@ -233,17 +233,16 @@ bool MainWindow::closeOpenningAxp()
 
 bool MainWindow::event(QEvent* event)
 {
-  QMainWindow::event(event);
-
   if (event->type() ==  QEvent::Close)
   {
     if (!this->closeOpenningAxp())
     {
       event->ignore();
+      return false;
     }
   }
 
-  return true;
+  return QMainWindow::event(event);
 }
 
 void MainWindow::on_actionOpen_triggered()
@@ -287,7 +286,6 @@ void MainWindow::setCurrentDir(const QModelIndex &index)
   connect(setCurDirThread, &QThread::started, [=](auto) {
     LOG_DEBUG("setCurrentDir::Thread" << "called");
     m_fileModel->removeRows(0, m_fileModel->rowCount());
-    LOG_DEBUG("setCurrentDir::Thread" << "removeRows");
 
     auto rootIndex = ui->dirList->model()->index(0, 0);
     bool isRoot = (index == rootIndex);
@@ -299,7 +297,6 @@ void MainWindow::setCurrentDir(const QModelIndex &index)
     bool startedFound = false;
     QMap<QString, bool> addedItems;
     for (const auto& fileInfo : fileList) {
-      LOG_DEBUG("setCurrentDir::Thread" << "Loop start");
       auto& fKey = fileInfo.first;
       QString local8BitFileName = QString::fromLocal8Bit(fKey.c_str());
       if (isRoot || local8BitFileName.indexOf(parentKey) == 0) {
@@ -314,14 +311,13 @@ void MainWindow::setCurrentDir(const QModelIndex &index)
         bool isDir = (indexOfSlash != -1);
         QList<QStandardItem*> items;
         items.reserve(m_fileModel->columnCount());
-        LOG_DEBUG("setCurrentDir::Thread" << "item.reserve");
 
         auto item = new AxpItem(isDir ? local8BitFileName.mid(0, keySize + itemName.size() + 1) : local8BitFileName);
-        LOG_DEBUG("setCurrentDir::Thread" << "item.new");
         items.append(item);
-        LOG_DEBUG("setCurrentDir::Thread" << "item.append 1");
 
         auto sizeItem = new QStandardItem();
+#if !defined(QT_DEBUG)
+#endif
         if (!isDir)
         {
           sizeItem->setText(
@@ -330,7 +326,6 @@ void MainWindow::setCurrentDir(const QModelIndex &index)
         }
         sizeItem->setTextAlignment(Qt::AlignVCenter | Qt::AlignRight);
         items.append(sizeItem);
-        LOG_DEBUG("setCurrentDir::Thread" << "item.append 2");
 
         auto statusItem = new QStandardItem();
         QString statusTxt;
@@ -362,17 +357,14 @@ void MainWindow::setCurrentDir(const QModelIndex &index)
         statusItem->setText(statusTxt);
         statusItem->setTextAlignment(Qt::AlignCenter);
         items.append(statusItem);
-        LOG_DEBUG("setCurrentDir::Thread" << "item.append 3");
 
         m_fileModel->appendRow(items);
-        LOG_DEBUG("setCurrentDir::Thread" << "m_fileModel.appendRow");
         startedFound = true;
       } else {
         if (startedFound) {
           break;
         }
       }
-      LOG_DEBUG("setCurrentDir::Thread" << "Loop end");
     }
 
     m_fileModel->sort(0);

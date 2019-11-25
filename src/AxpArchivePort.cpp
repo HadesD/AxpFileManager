@@ -204,7 +204,6 @@ void AxpArchivePort::startOpenAxpArchive(std::function<void ()> onStarted, std::
 {
   QThread* openAxpArchiveThread = new QThread();
   connect(openAxpArchiveThread, &QThread::started, [=](){
-    LOG_DEBUG("AxpArchivePort::startOpenAxpArchive::Thread started");
     onStarted();
 
     if (!m_pPakFile->openPakFile(m_fileName.toLocal8Bit().data(), !m_editable))
@@ -212,7 +211,6 @@ void AxpArchivePort::startOpenAxpArchive(std::function<void ()> onStarted, std::
       openAxpArchiveThread->quit();
       return;
     }
-    LOG_DEBUG("AxpArchivePort::startOpenAxpArchive::Thread open success");
 
     std::unique_ptr<
         AXP::IStream, std::function<void(AXP::IStream*)>
@@ -224,18 +222,13 @@ void AxpArchivePort::startOpenAxpArchive(std::function<void ()> onStarted, std::
       openAxpArchiveThread->quit();
       return;
     }
-    LOG_DEBUG("AxpArchivePort::startOpenAxpArchive::Thread created IStream");
 
     // Skip hex line
     hListStream->skipLine();
 
-    LOG_DEBUG("AxpArchivePort::startOpenAxpArchive::Thread IStream skipLine");
-
     char szTempLine[MAX_PATH*4] = {0};
     hListStream->readLine(szTempLine, sizeof(szTempLine));
-    LOG_DEBUG("AxpArchivePort::startOpenAxpArchive::Thread IStream readSize");
     uint32_t nFileCount = static_cast<uint32_t>(atoi(szTempLine));
-    LOG_DEBUG("AxpArchivePort::startOpenAxpArchive::Thread nFileCount");
 
     for (uint32_t i = 0; !hListStream->eof(); ++i)
     {
@@ -265,7 +258,6 @@ void AxpArchivePort::startOpenAxpArchive(std::function<void ()> onStarted, std::
       std::unique_ptr<
           AXP::IStream, std::function<void(AXP::IStream*)>
           > hFileStream(m_pPakFile->openFile(c_strFileName), [](AXP::IStream* s){
-        LOG_DEBUG("AxpArchivePort::startOpenAxpArchive::Thread created IStream file");
         s->close();
       });
       if(!hFileStream)
@@ -276,16 +268,9 @@ void AxpArchivePort::startOpenAxpArchive(std::function<void ()> onStarted, std::
       const unsigned int nStreamSize = hFileStream->size();
       if(nStreamSize != nFileSize)
       {
-//        setLastError(AXP::AXP_ERRORS::AXP_ERR_FILE_READ, "file=%s", c_strFileName);
+        LOG_DEBUG("AxpArchivePort::startOpenAxpArchive::Thread nStreamSize != nFileSize");
         continue;
       }
-
-//      std::unique_ptr<uchar[]> pTempBuf{new uchar[nStreamSize]};
-//      if(nStreamSize != hFileStream->read(pTempBuf.get(), nStreamSize))
-//      {
-//        setLastError(AXP::AXP_ERRORS::AXP_ERR_FILE_READ, "file=%s", c_strFileName);
-//        continue;
-//      }
 
       // Set arr
       auto& fileListItem = m_fileList[strFileName];

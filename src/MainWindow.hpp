@@ -21,7 +21,7 @@ class MainWindow : public QMainWindow
 
   public:
     explicit MainWindow(QWidget *parent = nullptr);
-    ~MainWindow();
+    virtual ~MainWindow() override;
 
   public:
     static MainWindow* getInstance();
