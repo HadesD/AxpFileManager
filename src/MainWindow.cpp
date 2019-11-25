@@ -266,8 +266,6 @@ void MainWindow::setCurrentDir(const QModelIndex &index)
   QThread* setCurDirThread = new QThread();
   connect(setCurDirThread, &QThread::started, [=](auto) {
     LOG_DEBUG("setCurrentDir::Thread" << "called");
-//    static QMutex lock;
-//    QMutexLocker locker(&lock);
     m_fileModel->removeRows(0, m_fileModel->rowCount());
     LOG_DEBUG("setCurrentDir::Thread" << "removeRows");
 
@@ -281,7 +279,6 @@ void MainWindow::setCurrentDir(const QModelIndex &index)
     bool startedFound = false;
     QMap<QString, bool> addedItems;
     for (const auto& fileInfo : fileList) {
-//      if (!s_instance) {setCurDirThread->quit();return;}
       LOG_DEBUG("setCurrentDir::Thread" << "Loop start");
       auto& fKey = fileInfo.first;
       QString local8BitFileName = QString::fromLocal8Bit(fKey.c_str());
@@ -491,7 +488,6 @@ void MainWindow::on_actionAdd_Folder_triggered()
     while (itDir.hasNext())
     {
       const auto& diskFileName = itDir.next();
-      //    LOG_DEBUG(__FUNCTION__ << diskFileName);
       const AxpArchivePort::FileName fileName = (dirBaseName + diskFileName.mid(opennedPathSize)).toLocal8Bit().data();
       LOG_DEBUG(__FUNCTION__ << fileName.data());
 
@@ -521,8 +517,6 @@ void MainWindow::on_actionAdd_Folder_triggered()
   });
 
   loadThread->start();
-
-  // Update list view
 }
 
 void MainWindow::on_actionSave_As_triggered()
@@ -530,13 +524,16 @@ void MainWindow::on_actionSave_As_triggered()
   auto opennedPaths = QFileDialog::getSaveFileName(this);
   QThread* saveThread = new QThread;
   connect(saveThread, &QThread::started, [=](){
-    if (m_axpArchive->saveToDiskFile(opennedPaths.toLocal8Bit().data()))
+    if (m_axpArchive->isModified())
     {
-      QDesktopServices::openUrl(QFileInfo(opennedPaths).path());
-    }
-    else
-    {
-      LOG(__FUNCTION__ << m_axpArchive->getLastErrorMessage());
+      if (m_axpArchive->saveToDiskFile(opennedPaths.toLocal8Bit().data()))
+      {
+        QDesktopServices::openUrl(QFileInfo(opennedPaths).path());
+      }
+      else
+      {
+        LOG(__FUNCTION__ << m_axpArchive->getLastErrorMessage());
+      }
     }
     saveThread->deleteLater();
     saveThread->quit();
@@ -570,7 +567,6 @@ void MainWindow::on_actionNew_From_directory_triggered()
     while (itDir.hasNext())
     {
       const auto& diskFileName = itDir.next();
-      //    LOG_DEBUG(__FUNCTION__ << diskFileName);
       const AxpArchivePort::FileName fileName = (diskFileName.mid(opennedPathSize + 1)).toLocal8Bit().data();
       LOG_DEBUG(__FUNCTION__ << fileName.data());
 
@@ -602,7 +598,6 @@ void MainWindow::on_actionNew_From_directory_triggered()
       return;
     }
 
-    // TODO: Will be crash here
     emit this->invoke([=](){
       this->openAxpArchive(opennedPathSave);
     });
