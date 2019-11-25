@@ -53,8 +53,6 @@ class AxpArchivePort : public QObject
     inline void setProgressCallback(ProgressUpdateCallback callback = nullptr) {m_progressUpdateCallback = callback;}
     AXP::AXP_ERRORS getLastError() const;
     QString getLastErrorMessage() const;
-    void setIsRunning(const bool isRunning);
-    inline bool isRunning() {return m_isRunning;}
 
   public:
     inline QString getArchiveFileName() {return m_fileName;}
@@ -66,7 +64,6 @@ class AxpArchivePort : public QObject
     QString m_fileName;
     bool m_editable = false;
     FileList m_fileList;
-    bool m_isRunning = false;
 
   signals:
 

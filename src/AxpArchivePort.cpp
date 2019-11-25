@@ -14,7 +14,6 @@ AxpArchivePort::AxpArchivePort(QObject *parent) : QObject(parent)
 
 AxpArchivePort::~AxpArchivePort()
 {
-  m_isRunning = false;
   AXP::destroyPakFile(m_pPakFile);
 }
 
@@ -205,7 +204,6 @@ void AxpArchivePort::startOpenAxpArchive(std::function<void ()> onStarted, std::
 {
   QThread* openAxpArchiveThread = new QThread();
   connect(openAxpArchiveThread, &QThread::started, [=](){
-    m_isRunning = true;
     LOG_DEBUG("AxpArchivePort::startOpenAxpArchive::Thread started");
     onStarted();
 
@@ -239,8 +237,7 @@ void AxpArchivePort::startOpenAxpArchive(std::function<void ()> onStarted, std::
     uint32_t nFileCount = static_cast<uint32_t>(atoi(szTempLine));
     LOG_DEBUG("AxpArchivePort::startOpenAxpArchive::Thread nFileCount");
 
-//    while (!listStream->eof())
-    for (uint32_t i = 0; m_isRunning && !hListStream->eof(); ++i)
+    for (uint32_t i = 0; !hListStream->eof(); ++i)
     {
       hListStream->readLine(szTempLine, sizeof(szTempLine));
 

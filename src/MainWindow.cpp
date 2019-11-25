@@ -257,8 +257,8 @@ void MainWindow::setCurrentDir(const QModelIndex &index)
   QThread* setCurDirThread = new QThread();
   connect(setCurDirThread, &QThread::started, [=](auto) {
     LOG_DEBUG("setCurrentDir::Thread" << "called");
-    static QMutex lock;
-    QMutexLocker locker(&lock);
+//    static QMutex lock;
+//    QMutexLocker locker(&lock);
     m_fileModel->removeRows(0, m_fileModel->rowCount());
     LOG_DEBUG("setCurrentDir::Thread" << "removeRows");
 
@@ -272,7 +272,7 @@ void MainWindow::setCurrentDir(const QModelIndex &index)
     bool startedFound = false;
     QMap<QString, bool> addedItems;
     for (const auto& fileInfo : fileList) {
-      if (!s_instance) {setCurDirThread->quit();;return;}
+//      if (!s_instance) {setCurDirThread->quit();return;}
       LOG_DEBUG("setCurrentDir::Thread" << "Loop start");
       auto& fKey = fileInfo.first;
       QString local8BitFileName = QString::fromLocal8Bit(fKey.c_str());
@@ -350,13 +350,16 @@ void MainWindow::setCurrentDir(const QModelIndex &index)
     }
 
     m_fileModel->sort(0);
-    setCurDirThread->deleteLater();
     setCurDirThread->quit();
   });
-  connect(setCurDirThread, &QThread::destroyed, [this]() {
+  connect(setCurDirThread, &QThread::finished, [=]() {
+    setCurDirThread->deleteLater();
+  });
+  connect(setCurDirThread, &QThread::destroyed, [=]() {
     ui->dirList->setDisabled(false);
     LOG_DEBUG("setCurrentDir::Thread" << "completed");
   });
+
   setCurDirThread->start();
   LOG_DEBUG(__FUNCTION__ << "completed!");
 }
