@@ -301,7 +301,7 @@ void AxpArchivePort::startOpenAxpArchive(std::function<void ()> onStarted, std::
       AXP::convertStringToVector(szTempLine, vStringVec, "|", true, false);
       if(vStringVec.size() != 3)
       {
-//        setLastError(AXP::AXP_ERRORS::AXP_ERR_FILE_FORMAT, "list file=%s", szTempLine);
+        LOG_DEBUG("AxpArchivePort::startOpenAxpArchive::Thread line split count !=3" << QString::fromLocal8Bit(szTempLine));
         continue;
       }
 

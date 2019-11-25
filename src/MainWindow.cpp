@@ -146,14 +146,14 @@ void MainWindow::openAxpArchive(const QString &fileName)
       const auto& nativePath = QDir::toNativeSeparators(fileName);
       ui->workingPathLabel->setText("File: <a href=\""+nativePath+"\">"+nativePath+"</a>");
       ui->workingPathLabel->setTextInteractionFlags(Qt::TextBrowserInteraction);
-
-      QStandardItem* item = new AxpItem("/");
-      item->setText(QFileInfo(fileName).fileName());
-      item->setIcon(QApplication::style()->standardIcon(QStyle::SP_DirIcon));
-      m_dirModel->appendRow(item);
-      auto rootIndex = m_dirModel->index(0, 0);
-      ui->dirList->expand(rootIndex);
     });
+
+    QStandardItem* item = new AxpItem("/");
+    item->setText(QFileInfo(fileName).fileName());
+    item->setIcon(QApplication::style()->standardIcon(QStyle::SP_DirIcon));
+    m_dirModel->appendRow(item);
+    auto rootIndex = m_dirModel->index(0, 0);
+    ui->dirList->expand(rootIndex);
   },
   [=](){
     emit this->invoke([=](){
@@ -189,10 +189,10 @@ void MainWindow::onAxpReadListProgress(const QString &fileName, const size_t cur
 
   QString fileBaseName = dirs.back();
 
-  auto dirParent = m_dirModel->item(0);
+  auto dirParent = m_dirModel->item(0, 0);
   if (!dirParent)
   {
-    LOG(__FUNCTION__ << "error get dirParent");
+    LOG(__FUNCTION__ << "error get dirParent" << fileName << current << '/' << total);
     return;
   }
 
@@ -272,12 +272,12 @@ void MainWindow::on_actionNew_triggered()
 void MainWindow::setCurrentDir(const QModelIndex &index)
 {
   LOG_DEBUG(__FUNCTION__ << "called");
-  static QMutex lock;
   ui->dirList->setDisabled(true);
   QThread* setCurDirThread = new QThread();
   connect(setCurDirThread, &QThread::started, [=](auto) {
     LOG_DEBUG("setCurrentDir::Thread" << "called");
-    lock.lock();
+    static QMutex lock;
+    QMutexLocker locker(&lock);
     m_fileModel->removeRows(0, m_fileModel->rowCount());
     LOG_DEBUG("setCurrentDir::Thread" << "removeRows");
 
@@ -373,7 +373,6 @@ void MainWindow::setCurrentDir(const QModelIndex &index)
   });
   connect(setCurDirThread, &QThread::destroyed, [this]() {
     ui->dirList->setDisabled(false);
-    lock.unlock();
     LOG_DEBUG("setCurrentDir::Thread" << "completed");
   });
   setCurDirThread->start();
@@ -525,10 +524,20 @@ void MainWindow::on_actionAdd_Folder_triggered()
 void MainWindow::on_actionSave_As_triggered()
 {
   auto opennedPaths = QFileDialog::getSaveFileName(this);
-  if (!m_axpArchive->saveToDiskFile(opennedPaths.toLocal8Bit().data()))
-  {
-    LOG_DEBUG(__FUNCTION__ << AXP::getLastErrorDesc());
-  }
+  QThread* saveThread = new QThread;
+  connect(saveThread, &QThread::started, [=](){
+    if (m_axpArchive->saveToDiskFile(opennedPaths.toLocal8Bit().data()))
+    {
+      QDesktopServices::openUrl(QFileInfo(opennedPaths).path());
+    }
+    else
+    {
+      LOG(__FUNCTION__ << AXP::getLastErrorDesc());
+    }
+    saveThread->deleteLater();
+    saveThread->quit();
+  });
+  saveThread->start();
 }
 
 void MainWindow::on_actionNew_From_directory_triggered()

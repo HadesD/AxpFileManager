@@ -67,10 +67,10 @@ class MainWindow : public QMainWindow
     void on_actionNew_From_directory_triggered();
 
   private:
-    Ui::MainWindow *ui;
-    AxpArchivePort* m_axpArchive;
-    QStandardItemModel* m_dirModel;
-    QStandardItemModel* m_fileModel;
+    Ui::MainWindow *ui = nullptr;
+    AxpArchivePort* m_axpArchive = nullptr;
+    QStandardItemModel* m_dirModel = nullptr;
+    QStandardItemModel* m_fileModel = nullptr;
 };
 
 #endif // MAINWINDOW_HPP
