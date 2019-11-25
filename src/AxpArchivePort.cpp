@@ -279,13 +279,18 @@ void AxpArchivePort::startOpenAxpArchive(std::function<void ()> onStarted, std::
       openAxpArchiveThread->quit();
       return;
     }
+    LOG_DEBUG("AxpArchivePort::startOpenAxpArchive::Thread created IStream");
 
     // Skip hex line
     hListStream->skipLine();
 
+    LOG_DEBUG("AxpArchivePort::startOpenAxpArchive::Thread IStream skipLine");
+
     char szTempLine[MAX_PATH*4] = {0};
     hListStream->readLine(szTempLine, sizeof(szTempLine));
+    LOG_DEBUG("AxpArchivePort::startOpenAxpArchive::Thread IStream readSize");
     uint32_t nFileCount = static_cast<uint32_t>(atoi(szTempLine));
+    LOG_DEBUG("AxpArchivePort::startOpenAxpArchive::Thread nFileCount");
 
 //    while (!listStream->eof())
     for (uint32_t i = 0; !hListStream->eof(); ++i)
@@ -316,6 +321,7 @@ void AxpArchivePort::startOpenAxpArchive(std::function<void ()> onStarted, std::
       std::unique_ptr<
           AXP::IStream, std::function<void(AXP::IStream*)>
           > hFileStream(m_pPakFile->openFile(c_strFileName), [](AXP::IStream* s){
+        LOG_DEBUG("AxpArchivePort::startOpenAxpArchive::Thread created IStream file");
         s->close();
       });
       if(!hFileStream)

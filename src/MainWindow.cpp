@@ -131,7 +131,7 @@ void MainWindow::openAxpArchive(const QString &fileName)
   m_axpArchive->close();
 
   m_axpArchive->setAxpArchiveFileName(fileName);
-  m_axpArchive->setAxpArchiveFileEditable(true);
+  m_axpArchive->setAxpArchiveFileEditable(false);
 
   m_axpArchive->setProgressCallback([this](auto fileName, auto cur, auto total) {
     QString qStringFileName = QString::fromLocal8Bit(fileName.data());
@@ -190,6 +190,11 @@ void MainWindow::onAxpReadListProgress(const QString &fileName, const size_t cur
   QString fileBaseName = dirs.back();
 
   auto dirParent = m_dirModel->item(0);
+  if (!dirParent)
+  {
+    LOG_DEBUG(__FUNCTION__ << "error get dirParent");
+    return;
+  }
 
   int dirSize = dirs.size() - 1;
   for (int i = 0; i < dirSize; ++i) {
