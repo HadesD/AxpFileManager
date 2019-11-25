@@ -311,6 +311,7 @@ void AxpFileListView::deleteSelected()
     }
   }
 
+  // TODO: Fix this, update state of item in above code block
   mainWnd->setCurrentDir(mainWnd->getUi()->dirList->currentIndex());
 }
 
@@ -376,6 +377,7 @@ void AxpFileListView::revertSelected()
     }
   }
 
+  // TODO: Fix this, update state of item in above code block
   mainWnd->setCurrentDir(mainWnd->getUi()->dirList->currentIndex());
 }
 
