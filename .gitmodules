@@ -4,3 +4,6 @@
 [submodule "deps/LibAxpArchive"]
 	path = deps/LibAxpArchive
 	url = https://github.com/HadesD/LibAxpArchive.git
+[submodule "deps/BabiesDev"]
+	path = deps/BabiesDev
+	url = https://github.com/HadesD/BabiesDev.git

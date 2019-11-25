@@ -6,6 +6,7 @@
 
 QT       += core gui
 win32:QT += winextras
+QT += network
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
@@ -32,6 +33,7 @@ CONFIG -= import_plugins
 static: DEFINES += AXP_STATIC_LIB
 
 INCLUDEPATH += $$PWD/../deps/LibAxpArchive/include
+INCLUDEPATH += $$PWD/../deps/BabiesDev/SupportLaunch/Extends/include
 
 CONFIG(debug, debug|release) {
   CONFIGURATION = Debug
@@ -41,7 +43,7 @@ CONFIG(debug, debug|release) {
 
 LIBS += -L$$PWD/../deps/lib/$$CONFIGURATION
 LIBS += -L$$PWD/../deps/LibAxpArchive/deps/lib/$$CONFIGURATION
-LIBS += -lLibAxpArchive -lzzip -lzlib -lshlwapi
+LIBS += -lLibAxpArchive -lzzip -lzlib -lshlwapi -lPsapi
 
 SOURCES += \
     AxpArchivePort.cpp \
@@ -52,8 +54,9 @@ SOURCES += \
     Global.cpp \
     StyledItemDelegate.cpp \
     Utils.cpp \
-        main.cpp \
-        MainWindow.cpp
+    main.cpp \
+    MainWindow.cpp \
+    $$PWD/../deps/BabiesDev/SupportLaunch/Extends/include/LaunchExtendsUtils.cpp
 
 HEADERS += \
     AxpArchivePort.hpp \
@@ -65,7 +68,8 @@ HEADERS += \
         MainWindow.hpp \
     Log.hpp \
     StyledItemDelegate.hpp \
-    Utils.hpp
+    Utils.hpp \
+    $$PWD/../deps/BabiesDev/SupportLaunch/Extends/include/LaunchExtendsUtils.hpp
 
 FORMS += \
         MainWindow.ui

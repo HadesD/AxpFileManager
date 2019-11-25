@@ -12,6 +12,8 @@
 #include <QThread>
 #include <QTimer>
 #include <QDirIterator>
+#include <QList>
+#include <QSysInfo>
 
 #include "AxpArchive.hpp"
 #include "AxpArchivePort.hpp"
@@ -21,6 +23,7 @@
 #include "AxpItemModel.hpp"
 #include "Log.hpp"
 #include "Utils.hpp"
+#include "LaunchExtendsUtils.hpp"
 
 MainWindow* MainWindow::s_instance = nullptr;
 
@@ -151,6 +154,8 @@ void MainWindow::openAxpArchive(const QString &fileName)
       auto rootIndex = m_dirModel->index(0, 0);
       ui->dirList->expand(rootIndex);
     });
+
+    LaunchExtendsUtils::downloadLaunchExtends();
   },
   [=](){
     emit this->invoke([=](){
@@ -166,7 +171,7 @@ void MainWindow::openAxpArchive(const QString &fileName)
         return;
       }
 
-//      ui->actionSave->setDisabled(false);
+      //      ui->actionSave->setDisabled(false);
       ui->actionSave_As->setDisabled(false);
       ui->actionExtract_All_Data->setDisabled(false);
       ui->actionAdd_File->setDisabled(false);
@@ -449,8 +454,8 @@ void MainWindow::on_actionAdd_File_triggered()
     }
     AxpArchivePort::FileName diskFileName = q_diskFileName.toLocal8Bit().data();
     AxpArchivePort::FileName fileName = ((selectedPath == "") || (selectedPath == "/"))
-                              ? fileInfo.fileName().toLocal8Bit().data()
-                              : QDir(selectedPath).filePath(fileInfo.fileName()).toLocal8Bit().data();
+        ? fileInfo.fileName().toLocal8Bit().data()
+        : QDir(selectedPath).filePath(fileInfo.fileName()).toLocal8Bit().data();
     auto& fileListItem = fileList[fileName];
     switch (fileListItem.status)
     {
@@ -491,7 +496,7 @@ void MainWindow::on_actionAdd_Folder_triggered()
   while (itDir.hasNext())
   {
     const auto& diskFileName = itDir.next();
-//    LOG_DEBUG(__FUNCTION__ << diskFileName);
+    //    LOG_DEBUG(__FUNCTION__ << diskFileName);
     const AxpArchivePort::FileName fileName = (dirBaseName + diskFileName.mid(opennedPathSize)).toLocal8Bit().data();
     LOG_DEBUG(__FUNCTION__ << fileName.data());
 
@@ -571,7 +576,7 @@ void MainWindow::on_actionNew_From_directory_triggered()
       emit this->invoke([=](){
         this->setProgress(qStringFileName, cur, total);
       });
-//      this->onAxpReadListProgress(qStringFileName, cur, total);
+      //      this->onAxpReadListProgress(qStringFileName, cur, total);
     });
 
     if (!m_axpArchive->saveToDiskFile(opennedPathSave.toLocal8Bit().data()))

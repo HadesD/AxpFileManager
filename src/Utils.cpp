@@ -8,6 +8,8 @@
 #include <commoncontrols.h>
 #include <QtWinExtras/QtWinExtras>
 
+#include <TlHelp32.h>
+
 #include "Log.hpp"
 
 namespace Utils {
