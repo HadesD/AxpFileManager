@@ -491,34 +491,46 @@ void MainWindow::on_actionAdd_Folder_triggered()
 
   LOG_DEBUG(__FUNCTION__ << opennedPaths);
 
-  QStringList pathArr = opennedPaths.split('/');
-  const auto& dirBaseName = pathArr.back();
-  const auto opennedPathSize = opennedPaths.size();
+  QThread* loadThread = new QThread;
+  connect(loadThread, &QThread::started, [=](){
+    QStringList pathArr = opennedPaths.split('/');
+    const auto& dirBaseName = pathArr.back();
+    const auto opennedPathSize = opennedPaths.size();
 
-  auto& fileList = m_axpArchive->getFileList();
-  QDirIterator itDir(opennedPaths, QDir::Files, QDirIterator::Subdirectories);
-  while (itDir.hasNext())
-  {
-    const auto& diskFileName = itDir.next();
-    //    LOG_DEBUG(__FUNCTION__ << diskFileName);
-    const AxpArchivePort::FileName fileName = (dirBaseName + diskFileName.mid(opennedPathSize)).toLocal8Bit().data();
-    LOG_DEBUG(__FUNCTION__ << fileName.data());
-
-    auto& fileListItem = fileList[fileName];
-    switch (fileListItem.status)
+    auto& fileList = m_axpArchive->getFileList();
+    QDirIterator itDir(opennedPaths, QDir::Files, QDirIterator::Subdirectories);
+    while (itDir.hasNext())
     {
-      case AxpArchivePort::FileListData::FileStatus::UNKNOWN:
-      case AxpArchivePort::FileListData::FileStatus::NEW:
-        fileListItem.status = AxpArchivePort::FileListData::FileStatus::NEW;
-        break;
+      const auto& diskFileName = itDir.next();
+      //    LOG_DEBUG(__FUNCTION__ << diskFileName);
+      const AxpArchivePort::FileName fileName = (dirBaseName + diskFileName.mid(opennedPathSize)).toLocal8Bit().data();
+      LOG_DEBUG(__FUNCTION__ << fileName.data());
 
-      default:
-        fileListItem.status = AxpArchivePort::FileListData::FileStatus::MODIFIED;
+      auto& fileListData = fileList[fileName];
+      switch (fileListData.status)
+      {
+        case AxpArchivePort::FileListData::FileStatus::UNKNOWN:
+        case AxpArchivePort::FileListData::FileStatus::NEW:
+          fileListData.status = AxpArchivePort::FileListData::FileStatus::NEW;
+          break;
+
+        default:
+          fileListData.status = AxpArchivePort::FileListData::FileStatus::MODIFIED;
+      }
+      fileListData.nameFromDisk = diskFileName.toLocal8Bit().data();
+      this->onAxpReadListProgress(QString::fromLocal8Bit(fileName.data()), 0, 0);
     }
-  }
+    loadThread->quit();
+  });
+
+  connect(loadThread, &QThread::finished, [=](){
+    this->setCurrentDir(ui->dirList->currentIndex());
+    loadThread->deleteLater();
+  });
+
+  loadThread->start();
 
   // Update list view
-  this->setCurrentDir(ui->dirList->currentIndex());
 }
 
 void MainWindow::on_actionSave_As_triggered()
