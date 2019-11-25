@@ -53,6 +53,7 @@ class AxpArchivePort : public QObject
     inline void setProgressCallback(ProgressUpdateCallback callback = nullptr) {m_progressUpdateCallback = callback;}
     AXP::AXP_ERRORS getLastError() const;
     QString getLastErrorMessage() const;
+    bool isModified() const;
 
   public:
     inline QString getArchiveFileName() {return m_fileName;}

@@ -99,6 +99,15 @@ void MainWindow::openAxpArchive(const QString &fileName)
     return;
   }
 
+  if (m_axpArchive->isModified())
+  {
+    auto retMsg = QMessageBox::question(this, "Confirm discard modified", "You have unsave changes!\n\nDo you want to discard?");
+    if (retMsg != QMessageBox::StandardButton::Yes)
+    {
+      return;
+    }
+  }
+
   this->closeOpenningAxp();
 
   m_axpArchive->setAxpArchiveFileName(fileName);

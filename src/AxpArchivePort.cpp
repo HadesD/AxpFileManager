@@ -320,3 +320,15 @@ QString AxpArchivePort::getLastErrorMessage() const
 {
   return AXP::getLastErrorDesc();
 }
+
+bool AxpArchivePort::isModified() const
+{
+  for (const auto& fileListItem : m_fileList)
+  {
+    if (fileListItem.second.status != AxpArchivePort::FileListData::FileStatus::ORIGIN)
+    {
+      return true;
+    }
+  }
+  return false;
+}
