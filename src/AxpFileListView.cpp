@@ -267,6 +267,7 @@ void AxpFileListView::deleteSelected()
     QString q_fileName = item.data(AxpItem::ItemKeyRole).toString();
     AxpArchivePort::FileName fileName = q_fileName.toLocal8Bit().data();
     bool isDir = q_fileName.at(q_fileName.size() - 1) == '/';
+    bool willBeRemoved = false;
     if (!isDir)
     {
       auto& fileListData = fileList[fileName];
@@ -274,9 +275,7 @@ void AxpFileListView::deleteSelected()
       {
         case AxpArchivePort::FileListData::FileStatus::NEW:
           fileList.erase(fileName);
-          break;
-
-        case AxpArchivePort::FileListData::FileStatus::UNKNOWN:
+          willBeRemoved = true;
           break;
 
         default:
@@ -285,6 +284,7 @@ void AxpFileListView::deleteSelected()
     }
     else
     {
+      willBeRemoved = true;
       for (auto& fileListItem : fileList)
       {
         const auto& itemKeyName = fileListItem.first;
@@ -301,18 +301,21 @@ void AxpFileListView::deleteSelected()
             fileList.erase(fileName);
             break;
 
-          case AxpArchivePort::FileListData::FileStatus::UNKNOWN:
-            break;
-
           default:
             fileListData.status = AxpArchivePort::FileListData::FileStatus::DELETED;
+            willBeRemoved = false;
         }
       }
+    }
+    LOG_DEBUG(__FUNCTION__ << "willBeRemoved" << willBeRemoved);
+    if (willBeRemoved)
+    {
+      mainWnd->getUi()->fileList->model()->removeRows(0, 3, item.parent());
     }
   }
 
   // TODO: Fix this, update state of item in above code block
-  mainWnd->setCurrentDir(mainWnd->getUi()->dirList->currentIndex());
+//  mainWnd->setCurrentDir(mainWnd->getUi()->dirList->currentIndex());
 }
 
 void AxpFileListView::revertSelected()
@@ -340,6 +343,7 @@ void AxpFileListView::revertSelected()
       {
         case AxpArchivePort::FileListData::FileStatus::NEW:
           fileList.erase(fileName);
+          mainWnd->getUi()->fileList->model()->removeRows(0, 3, item.parent());
           break;
 
         case AxpArchivePort::FileListData::FileStatus::UNKNOWN:
@@ -378,7 +382,7 @@ void AxpFileListView::revertSelected()
   }
 
   // TODO: Fix this, update state of item in above code block
-  mainWnd->setCurrentDir(mainWnd->getUi()->dirList->currentIndex());
+//  mainWnd->setCurrentDir(mainWnd->getUi()->dirList->currentIndex());
 }
 
 void AxpFileListView::dropEvent(QDropEvent* event)
