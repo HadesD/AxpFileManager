@@ -35,7 +35,8 @@ class MainWindow : public QMainWindow
     AxpArchivePort* getAxpArchive() {return m_axpArchive;}
 
   private:
-    void closeOpenningAxp();
+    bool closeOpenningAxp();
+    bool event(QEvent* event) override;
 
   signals:
     void invoke(std::function<void()> cb);

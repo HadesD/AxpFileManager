@@ -99,7 +99,10 @@ void MainWindow::openAxpArchive(const QString &fileName)
     return;
   }
 
-  this->closeOpenningAxp();
+  if (!this->closeOpenningAxp())
+  {
+    return;
+  }
 
   m_axpArchive->setAxpArchiveFileName(fileName);
   m_axpArchive->setAxpArchiveFileEditable(false);
@@ -202,14 +205,14 @@ void MainWindow::setProgress(const QString &name, const std::size_t current, con
         );
 }
 
-void MainWindow::closeOpenningAxp()
+bool MainWindow::closeOpenningAxp()
 {
   if (m_axpArchive->isModified())
   {
     auto retMsg = QMessageBox::question(this, "Confirm discard modified", "You have unsave changes!\n\nDo you want to discard?");
     if (retMsg != QMessageBox::StandardButton::Yes)
     {
-      return;
+      return false;
     }
   }
 
@@ -224,6 +227,23 @@ void MainWindow::closeOpenningAxp()
   m_fileModel->removeRows(0, m_fileModel->rowCount());
   m_dirModel->clear();
   m_axpArchive->close();
+
+  return true;
+}
+
+bool MainWindow::event(QEvent* event)
+{
+  QMainWindow::event(event);
+
+  if (event->type() ==  QEvent::Close)
+  {
+    if (!this->closeOpenningAxp())
+    {
+      event->ignore();
+    }
+  }
+
+  return true;
 }
 
 void MainWindow::on_actionOpen_triggered()
@@ -417,7 +437,10 @@ void MainWindow::on_actionExtract_All_Data_triggered()
 
 void MainWindow::on_actionExit_triggered()
 {
-  this->close();
+  if (this->closeOpenningAxp())
+  {
+    this->close();
+  }
 }
 
 void MainWindow::on_workingPathLabel_linkActivated(const QString &link)
