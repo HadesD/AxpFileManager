@@ -115,7 +115,7 @@ void MainWindow::openAxpArchive(const QString &fileName)
 {
   if (fileName.isEmpty())
   {
-    LOG("You must input axp file name");
+    LOG(__FUNCTION__ << "You must input axp file name");
     return;
   }
 
