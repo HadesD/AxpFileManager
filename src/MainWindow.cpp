@@ -192,7 +192,7 @@ void MainWindow::onAxpReadListProgress(const QString &fileName, const size_t cur
   auto dirParent = m_dirModel->item(0);
   if (!dirParent)
   {
-    LOG_DEBUG(__FUNCTION__ << "error get dirParent");
+    LOG(__FUNCTION__ << "error get dirParent");
     return;
   }
 
