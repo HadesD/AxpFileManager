@@ -50,13 +50,15 @@ class AxpArchivePort : public QObject
     void setAxpArchiveFileName(const QString& fileName);
     void setAxpArchiveFileEditable(const bool editable);
     void startOpenAxpArchive(std::function<void()> onStarted = nullptr, std::function<void()> onFinished = nullptr);
-    void setProgressCallback(ProgressUpdateCallback callback = nullptr) {m_progressUpdateCallback = callback;}
+    inline void setProgressCallback(ProgressUpdateCallback callback = nullptr) {m_progressUpdateCallback = callback;}
     AXP::AXP_ERRORS getLastError() const;
     QString getLastErrorMessage() const;
+    void setIsRunning(const bool isRunning);
+    inline bool isRunning() {return m_isRunning;}
 
   public:
-    QString getArchiveFileName() {return m_fileName;}
-    FileList& getFileList() {return m_fileList;}
+    inline QString getArchiveFileName() {return m_fileName;}
+    inline FileList& getFileList() {return m_fileList;}
 
   private:
     AXP::IPakFile* m_pPakFile = nullptr;
@@ -64,6 +66,7 @@ class AxpArchivePort : public QObject
     QString m_fileName;
     bool m_editable = false;
     FileList m_fileList;
+    bool m_isRunning = false;
 
   signals:
 

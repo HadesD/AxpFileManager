@@ -157,7 +157,7 @@ void AxpFileListView::openSelected()
       return;
     }
     auto dirModel = dirList->model();
-    auto curDirIndex = dirList->currentIndex();
+    auto curDirIndex = dirList->currentIndex().isValid() ? dirList->currentIndex() : dirList->model()->index(0, 0);
     auto curItem = reinterpret_cast<const QStandardItemModel*>(dirModel)->itemFromIndex(curDirIndex);
     auto rowCount = curItem->rowCount();
     for (int r = 0; r < rowCount; ++r) {
@@ -174,12 +174,29 @@ void AxpFileListView::openSelected()
   auto itemKey = itemIndexKeyData.toString();
   auto axpArc = mainWnd->getAxpArchive();
   auto fKey = std::string(itemKey.toLocal8Bit());
-  if (!axpArc->exists(fKey)) {
-    LOG(itemKey << ": Item does not exist");
+  auto fileList = axpArc->getFileList();
+  if (!fileList.count(fKey) && !axpArc->exists(fKey)) {
+    LOG(__FUNCTION__ << itemKey << ": Item does not exist");
     return;
   }
 
-  auto data = axpArc->read(fKey);
+  QByteArray data;
+  auto nameFromDisk = fileList[fKey].nameFromDisk;
+  if (nameFromDisk.empty())
+  {
+    data = axpArc->read(fKey);
+  }
+  else
+  {
+    QFile hFile(QString::fromLocal8Bit(nameFromDisk.data()));
+    if (!hFile.open(QIODevice::ReadOnly))
+    {
+      LOG(__FUNCTION__ << hFile.fileName() << "can not open");
+      return;
+    }
+    data = hFile.readAll();
+    hFile.close();
+  }
   LOG_DEBUG(__FUNCTION__ << "data.size:" << data.size());
   QPixmap pxmap;
   if (pxmap.loadFromData(data)) {
@@ -190,7 +207,7 @@ void AxpFileListView::openSelected()
       pxmap = pxmap.scaled(desktopSize/1.2, Qt::KeepAspectRatio, Qt::SmoothTransformation);
     }
     QSize minDlgSize(500, 300);
-    QLabel* imgDlg = new CustomLabel(this);
+    QLabel* imgDlg = new QLabel(this);
     imgDlg->resize(
           std::max(pxmap.width(), minDlgSize.width()),
           std::max(pxSize.height(), minDlgSize.height())
@@ -206,22 +223,28 @@ void AxpFileListView::openSelected()
             desktop->availableGeometry()
             )
           );
-
     imgDlg->setPixmap(pxmap);
     imgDlg->show();
   } else {
     LOG_DEBUG(__FUNCTION__ << "trying to open another");
     QTemporaryDir& dir = Global::getTempDir();
 
-    QString fileName(dir.path() + '/' + itemKey);
-    if (axpArc->extractToDisk(fKey, fileName.toLocal8Bit().data())) {
-      //      QMimeDatabase db;
-      //      QMimeType mime = db.mimeTypeForFile(fileName, QMimeDatabase::MatchContent);
-      //      LOG_DEBUG(__FUNCTION__ << mime);
-      if (reinterpret_cast<int>(ShellExecute(GetDesktopWindow(), "open", fileName.toLocal8Bit().data(), "", "", 1)) < 32)
+    QString fileName;
+    if (nameFromDisk.empty())
+    {
+      fileName = dir.path() + '/' + itemKey;
+      if (!axpArc->extractToDisk(fKey, fileName.toLocal8Bit().data()))
       {
-        LOG_DEBUG(__FUNCTION__ << fileName << ": failed to open native app");
+        return;
       }
+    }
+    else
+    {
+      fileName = QString::fromLocal8Bit(nameFromDisk.data());
+    }
+    if (reinterpret_cast<int>(ShellExecute(GetDesktopWindow(), "open", fileName.toLocal8Bit().data(), "", "", 1)) < 32)
+    {
+      LOG_DEBUG(__FUNCTION__ << fileName << ": failed to open native app");
     }
   }
 }

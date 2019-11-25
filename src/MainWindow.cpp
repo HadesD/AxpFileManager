@@ -252,6 +252,7 @@ void MainWindow::on_actionNew_triggered()
 void MainWindow::setCurrentDir(const QModelIndex &index)
 {
   LOG_DEBUG(__FUNCTION__ << "called");
+
   ui->dirList->setDisabled(true);
   QThread* setCurDirThread = new QThread();
   connect(setCurDirThread, &QThread::started, [=](auto) {
@@ -271,6 +272,7 @@ void MainWindow::setCurrentDir(const QModelIndex &index)
     bool startedFound = false;
     QMap<QString, bool> addedItems;
     for (const auto& fileInfo : fileList) {
+      if (!s_instance) {setCurDirThread->quit();;return;}
       LOG_DEBUG("setCurrentDir::Thread" << "Loop start");
       auto& fKey = fileInfo.first;
       QString local8BitFileName = QString::fromLocal8Bit(fKey.c_str());
