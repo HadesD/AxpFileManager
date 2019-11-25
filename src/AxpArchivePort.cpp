@@ -111,67 +111,6 @@ bool AxpArchivePort::saveToDiskFile(const AxpArchivePort::FileName& toDiskFileNa
     LOG(__FUNCTION__ << "error make path");
     return false;
   }
-#if 0
-  if (QFile::exists(q_toDiskFileName))
-  {
-    if (!QFile::remove(q_toDiskFileName))
-    {
-      LOG(__FUNCTION__ << "error remove file");
-      return false;
-    }
-  }
-  if (!QFile::copy(m_fileName, q_toDiskFileName))
-  {
-    LOG(__FUNCTION__ << "error copy file");
-    return false;
-  }
-
-  std::unique_ptr<
-      AXP::IPakFile, std::function<void(AXP::IPakFile*)>
-      > packFile(AXP::createPakFile(), [](AXP::IPakFile* s){
-    AXP::destroyPakFile(s);
-  });
-  if (!packFile)
-  {
-    LOG(__FUNCTION__ << "error create Handle");
-    return false;
-  }
-  if (!packFile->openPakFile(c_toDiskFileName, false))
-  {
-    LOG(__FUNCTION__ << "error open file" << AXP::getLastErrorDesc());
-    QFile::remove(q_toDiskFileName);
-    return false;
-  }
-
-  for (const auto& fileListPair : m_fileList)
-  {
-    const auto& fileData = fileListPair.second;
-    const auto& nameFromDisk = fileData.nameFromDisk;
-
-    // Skip file not have edit flag
-    if (fileData.status == FileListData::FileStatus::ORIGIN)
-    {
-      continue;
-    }
-
-    const auto& fileName = fileListPair.first;
-    const char* c_fileName = fileName.data();
-    if (packFile->isFileExists(c_fileName))
-    {
-      packFile->removeFile(c_fileName, true); // Delete everytime
-    }
-
-    if (fileData.status != FileListData::FileStatus::DELETED)
-    {
-      const char* c_nameFromDisk = nameFromDisk.data();
-      packFile->insertContents(c_nameFromDisk, 0, c_fileName, AXP::AXP_CONTENTS::AC_DISKFILE, true);
-    }
-  }
-
-  LOG_DEBUG(__FUNCTION__ << "completed");
-
-  return true;
-#endif
 
   std::unique_ptr<
       AXP::IPakMaker, std::function<void(AXP::IPakMaker*)>
@@ -219,6 +158,12 @@ bool AxpArchivePort::saveToDiskFile(const AxpArchivePort::FileName& toDiskFileNa
       LOG_DEBUG(__FUNCTION__ << "error extract" << fileName.c_str() << getLastErrorMessage());
       continue;
     }
+  }
+
+  // Save on working file
+  if (q_toDiskFileName == m_fileName)
+  {
+    this->close();
   }
 
   pakMaker->addDiskFold(q_tempDirPath.toLocal8Bit().data(), "", "", true);

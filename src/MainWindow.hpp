@@ -34,6 +34,9 @@ class MainWindow : public QMainWindow
         );
     AxpArchivePort* getAxpArchive() {return m_axpArchive;}
 
+  private:
+    void closeOpenningAxp();
+
   signals:
     void invoke(std::function<void()> cb);
 
@@ -43,7 +46,7 @@ class MainWindow : public QMainWindow
         const QString& fileName,
         const std::size_t current, const std::size_t total
         );
-    void invokeCallback(std::function<void()> cb);
+    void invokeCallback(std::function<void()> cb) { cb(); }
 
   private slots:
     void on_actionOpen_triggered();
@@ -65,6 +68,10 @@ class MainWindow : public QMainWindow
     void on_actionAdd_Folder_triggered();
 
     void on_actionNew_From_directory_triggered();
+
+    void on_actionSave_triggered();
+
+    void on_actionClose_openning_file_triggered();
 
   private:
     Ui::MainWindow *ui = nullptr;

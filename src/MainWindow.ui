@@ -1405,6 +1405,7 @@ QDateEdit::down-arrow:focus {
     <addaction name="actionSave"/>
     <addaction name="actionSave_As"/>
     <addaction name="separator"/>
+    <addaction name="actionClose_openning_file"/>
     <addaction name="actionExit"/>
    </widget>
    <widget class="QMenu" name="menuHelp">
@@ -1497,6 +1498,14 @@ QDateEdit::down-arrow:focus {
    </property>
    <property name="shortcut">
     <string>Ctrl+N</string>
+   </property>
+  </action>
+  <action name="actionClose_openning_file">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Close openning file</string>
    </property>
   </action>
  </widget>

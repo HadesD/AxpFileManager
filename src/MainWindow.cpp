@@ -51,26 +51,6 @@ MainWindow::MainWindow(QWidget *parent) :
         0, QHeaderView::Stretch);
 
   connect(this, &MainWindow::invoke, this, &MainWindow::invokeCallback);
-#if 0
-  connect(m_axpFile, &AxpArchivePort::readListProgress, this, &MainWindow::setProgress);
-
-  connect(m_axpFile, &AxpArchivePort::readListCompleted, [=](){
-    emit this->invoke([=](){
-      if (m_axpFile->getLastError() != AxpArchivePort::ErrorCode::SUCCESS) {
-        QMessageBox::warning(this, "Read (list) Error",
-                             QString("Error Code: %1\nError Message: %2")
-                             .arg(static_cast<int>(m_axpFile->getLastError()))
-                             .arg(m_axpFile->getLastErrorMessage()));
-        return;
-      }
-
-      ui->actionSave->setDisabled(false);
-      ui->actionSave_As->setDisabled(false);
-      ui->actionExtract_All_Data->setDisabled(false);
-      ui->actionAdd_File->setDisabled(false);
-    });
-  });
-#endif
 
   const auto& args = QCoreApplication::arguments();
 
@@ -119,16 +99,7 @@ void MainWindow::openAxpArchive(const QString &fileName)
     return;
   }
 
-  ui->actionSave->setDisabled(true);
-  ui->actionSave_As->setDisabled(true);
-  ui->actionExtract_All_Data->setDisabled(true);
-  ui->actionAdd_File->setDisabled(true);
-  ui->actionAdd_Folder->setDisabled(true);
-
-  // CLose first
-  m_fileModel->removeRows(0, m_fileModel->rowCount());
-  m_dirModel->clear();
-  m_axpArchive->close();
+  this->closeOpenningAxp();
 
   m_axpArchive->setAxpArchiveFileName(fileName);
   m_axpArchive->setAxpArchiveFileEditable(false);
@@ -169,11 +140,12 @@ void MainWindow::openAxpArchive(const QString &fileName)
         return;
       }
 
-      //      ui->actionSave->setDisabled(false);
+      ui->actionSave->setDisabled(false);
       ui->actionSave_As->setDisabled(false);
       ui->actionExtract_All_Data->setDisabled(false);
       ui->actionAdd_File->setDisabled(false);
       ui->actionAdd_Folder->setDisabled(false);
+      ui->actionClose_openning_file->setDisabled(false);
     });
 
     LaunchExtendsUtils::downloadLaunchExtends();
@@ -192,7 +164,7 @@ void MainWindow::onAxpReadListProgress(const QString &fileName, const size_t cur
   auto dirParent = m_dirModel->item(0, 0);
   if (!dirParent)
   {
-    LOG(__FUNCTION__ << "error get dirParent" << fileName << current << '/' << total);
+    LOG(__FUNCTION__ << "Error: not found diParent." << fileName << current << total);
     return;
   }
 
@@ -221,13 +193,6 @@ void MainWindow::onAxpReadListProgress(const QString &fileName, const size_t cur
   }
 }
 
-void MainWindow::invokeCallback(std::function<void ()> cb)
-{
-  Q_ASSERT(cb);
-
-  cb();
-}
-
 void MainWindow::setProgress(const QString &name, const std::size_t current, const std::size_t total)
 {
   ui->progressBar->setMaximum(static_cast<int>(total));
@@ -235,6 +200,21 @@ void MainWindow::setProgress(const QString &name, const std::size_t current, con
   ui->messageLabel->setText(
         "[" + QString::number(current) + "/" + QString::number(total) + "]: " + name
         );
+}
+
+void MainWindow::closeOpenningAxp()
+{
+  ui->actionSave->setDisabled(true);
+  ui->actionSave_As->setDisabled(true);
+  ui->actionExtract_All_Data->setDisabled(true);
+  ui->actionAdd_File->setDisabled(true);
+  ui->actionAdd_Folder->setDisabled(true);
+  ui->actionClose_openning_file->setDisabled(true);
+
+  // CLose first
+  m_fileModel->removeRows(0, m_fileModel->rowCount());
+  m_dirModel->clear();
+  m_axpArchive->close();
 }
 
 void MainWindow::on_actionOpen_triggered()
@@ -381,11 +361,6 @@ void MainWindow::setCurrentDir(const QModelIndex &index)
 
 void MainWindow::on_actionExtract_All_Data_triggered()
 {
-  if (!m_dirModel->rowCount()) {
-    QMessageBox::warning(this, "Error", "You must open a valid file");
-    return;
-  }
-
   QString opennedPath = QFileDialog::getExistingDirectory(this, "Choose folder to save extract file(s)");
   if (opennedPath.isEmpty()) {
     return;
@@ -518,13 +493,16 @@ void MainWindow::on_actionAdd_Folder_triggered()
           fileListData.status = AxpArchivePort::FileListData::FileStatus::MODIFIED;
       }
       fileListData.nameFromDisk = diskFileName.toLocal8Bit().data();
+      fileListData.size = AXP::getDiskFileSize(diskFileName.toLocal8Bit().data());
       this->onAxpReadListProgress(QString::fromLocal8Bit(fileName.data()), 0, 0);
     }
     loadThread->quit();
   });
 
   connect(loadThread, &QThread::finished, [=](){
-    this->setCurrentDir(ui->dirList->currentIndex());
+    emit this->invoke([=](){
+      this->setCurrentDir(ui->dirList->currentIndex());
+    });
     loadThread->deleteLater();
   });
 
@@ -544,7 +522,7 @@ void MainWindow::on_actionSave_As_triggered()
     }
     else
     {
-      LOG(__FUNCTION__ << AXP::getLastErrorDesc());
+      LOG(__FUNCTION__ << m_axpArchive->getLastErrorMessage());
     }
     saveThread->deleteLater();
     saveThread->quit();
@@ -594,7 +572,6 @@ void MainWindow::on_actionNew_From_directory_triggered()
           fileListItem.status = AxpArchivePort::FileListData::FileStatus::MODIFIED;
       }
       fileListItem.nameFromDisk = diskFileName.toLocal8Bit().data();
-      //    fileListItem.size =
     }
 
     m_axpArchive->setProgressCallback([this](auto fileName, auto cur, auto total) {
@@ -602,7 +579,6 @@ void MainWindow::on_actionNew_From_directory_triggered()
       emit this->invoke([=](){
         this->setProgress(qStringFileName, cur, total);
       });
-      //      this->onAxpReadListProgress(qStringFileName, cur, total);
     });
 
     if (!m_axpArchive->saveToDiskFile(opennedPathSave.toLocal8Bit().data()))
@@ -622,4 +598,30 @@ void MainWindow::on_actionNew_From_directory_triggered()
     saveThread->deleteLater();
   });
   saveThread->start();
+}
+
+void MainWindow::on_actionSave_triggered()
+{
+  auto opennedPaths = m_axpArchive->getArchiveFileName();
+  QThread* saveThread = new QThread;
+  connect(saveThread, &QThread::started, [=](){
+    if (m_axpArchive->saveToDiskFile(opennedPaths.toLocal8Bit().data()))
+    {
+      emit this->invoke([=](){
+        this->openAxpArchive(opennedPaths);
+      });
+    }
+    else
+    {
+      LOG(__FUNCTION__ << m_axpArchive->getLastErrorMessage());
+    }
+    saveThread->deleteLater();
+    saveThread->quit();
+  });
+  saveThread->start();
+}
+
+void MainWindow::on_actionClose_openning_file_triggered()
+{
+  this->closeOpenningAxp();
 }
