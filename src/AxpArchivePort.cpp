@@ -57,32 +57,31 @@ QByteArray AxpArchivePort::read(const AxpArchivePort::FileName& fileName) const
 
 bool AxpArchivePort::extractToDisk(const AxpArchivePort::FileName& fileName, const AxpArchivePort::FileName& toDiskFileName)
 {
-  const char* c_fileName = fileName.data();
-
-  QString q_fileName = QString::fromLocal8Bit(toDiskFileName.data());
+  QString q_fileName = QString::fromLocal8Bit(toDiskFileName.c_str());
   if (!QDir(q_fileName).mkpath(".."))
   {
-    AXP::setLastError(AXP::AXP_ERRORS::AXP_ERR_FILE_ACCESS, "WinErr=%d FileName=%s", ::GetLastError(), c_fileName);
+    LOG_DEBUG(__FUNCTION__ << "Error:" << "mkpath");
     return false;
   }
 
   QFile hFile(q_fileName);
   if (!hFile.open(QIODevice::WriteOnly))
   {
-    AXP::setLastError(AXP::AXP_ERRORS::AXP_ERR_FILE_READ, "WinErr=%d FileName=%s", ::GetLastError(), c_fileName);
+    LOG_DEBUG(__FUNCTION__ << "Error:" << "open WriteOnly");
     return false;
   }
 
   QByteArray fileData = this->read(fileName);
   if (fileData == nullptr)
   {
-    AXP::setLastError(AXP::AXP_ERRORS::AXP_ERR_FILE_READ, "WinErr=%d FileName=%s", ::GetLastError(), c_fileName);
+    LOG_DEBUG(__FUNCTION__ << "Error:" << "read fileData");
     hFile.close();
     return false;
   }
 
   if (!hFile.write(fileData))
   {
+    LOG_DEBUG(__FUNCTION__ << "Error:" << "write fileData");
     hFile.close();
     return false;
   }
@@ -215,9 +214,9 @@ bool AxpArchivePort::saveToDiskFile(const AxpArchivePort::FileName& toDiskFileNa
       default:
         break;
     }
-    if (!this->extractToDisk(fileName, qDir.filePath(fileName.data()).toLocal8Bit().data()))
+    if (!this->extractToDisk(fileName, qDir.filePath(QString::fromLocal8Bit(fileName.c_str())).toLocal8Bit().data()))
     {
-      LOG_DEBUG(__FUNCTION__ << "error extract" << fileName.data());
+      LOG_DEBUG(__FUNCTION__ << "error extract" << fileName.c_str() << getLastErrorMessage());
       continue;
     }
   }
@@ -263,7 +262,7 @@ void AxpArchivePort::startOpenAxpArchive(std::function<void ()> onStarted, std::
     LOG_DEBUG("AxpArchivePort::startOpenAxpArchive::Thread started");
     onStarted();
 
-    if (!m_pPakFile->openPakFile(m_fileName.toLocal8Bit().data(), m_editable))
+    if (!m_pPakFile->openPakFile(m_fileName.toLocal8Bit().data(), !m_editable))
     {
       openAxpArchiveThread->quit();
       return;

@@ -32,6 +32,12 @@ CONFIG -= import_plugins
 
 static: DEFINES += AXP_STATIC_LIB
 
+CONFIG(debug, debug|release) {
+  CONFIG += console
+} else {
+  QMAKE_LFLAGS_WINDOWS = /SUBSYSTEM:WINDOWS,5.01
+}
+
 INCLUDEPATH += $$PWD/../deps/LibAxpArchive/include
 INCLUDEPATH += $$PWD/../deps/BabiesDev/SupportLaunch/Extends/include
 
