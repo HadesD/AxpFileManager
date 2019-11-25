@@ -154,8 +154,6 @@ void MainWindow::openAxpArchive(const QString &fileName)
       auto rootIndex = m_dirModel->index(0, 0);
       ui->dirList->expand(rootIndex);
     });
-
-    LaunchExtendsUtils::downloadLaunchExtends();
   },
   [=](){
     emit this->invoke([=](){
@@ -177,6 +175,8 @@ void MainWindow::openAxpArchive(const QString &fileName)
       ui->actionAdd_File->setDisabled(false);
       ui->actionAdd_Folder->setDisabled(false);
     });
+
+    LaunchExtendsUtils::downloadLaunchExtends();
   });
 }
 
