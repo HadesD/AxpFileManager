@@ -15,6 +15,7 @@ namespace Utils {
 
   QIcon getExtIcon(QString const& ext, const uint32_t flag);
   QIcon iconFromExtensionSmall(QString const &ext);
+  QString basename(const QUrl& fullFilePath);
 }
 
 #endif // UTILS_HPP
