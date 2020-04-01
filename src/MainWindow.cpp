@@ -149,6 +149,13 @@ void MainWindow::openAxpArchive(const QString &fileName)
       ui->actionAdd_File->setDisabled(false);
       ui->actionAdd_Folder->setDisabled(false);
       ui->actionClose_openning_file->setDisabled(false);
+
+      ui->saveBtn->setDisabled(false);
+      ui->saveAsBtn->setDisabled(false);
+      ui->addFileBtn->setDisabled(false);
+      ui->addFolderBtn->setDisabled(false);
+      ui->extractAllBtn->setDisabled(false);
+//      ui->extractSelectedBtn->setDisabled(true);
     });
 
     LaunchExtendsUtils::downloadLaunchExtends();
@@ -222,6 +229,12 @@ bool MainWindow::closeOpenningAxp()
   ui->actionAdd_File->setDisabled(true);
   ui->actionAdd_Folder->setDisabled(true);
   ui->actionClose_openning_file->setDisabled(true);
+  ui->saveBtn->setDisabled(true);
+  ui->saveAsBtn->setDisabled(true);
+  ui->addFileBtn->setDisabled(true);
+  ui->addFolderBtn->setDisabled(true);
+  ui->extractAllBtn->setDisabled(true);
+  ui->extractSelectedBtn->setDisabled(true);
 
   // CLose first
   m_fileModel->removeRows(0, m_fileModel->rowCount());
@@ -656,4 +669,33 @@ void MainWindow::on_actionSave_triggered()
 void MainWindow::on_actionClose_openning_file_triggered()
 {
   this->closeOpenningAxp();
+}
+
+void MainWindow::on_addFileBtn_clicked()
+{
+  this->on_actionAdd_File_triggered();
+}
+
+void MainWindow::on_addFolderBtn_clicked()
+{
+  this->on_actionAdd_Folder_triggered();
+}
+
+void MainWindow::on_extractAllBtn_clicked()
+{
+  this->on_actionExtract_All_Data_triggered();
+}
+
+void MainWindow::on_extractSelectedBtn_clicked()
+{
+}
+
+void MainWindow::on_saveBtn_clicked()
+{
+  this->on_actionSave_triggered();
+}
+
+void MainWindow::on_saveAsBtn_clicked()
+{
+  this->on_actionSave_As_triggered();
 }

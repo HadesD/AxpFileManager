@@ -74,6 +74,18 @@ class MainWindow : public QMainWindow
 
     void on_actionClose_openning_file_triggered();
 
+    void on_addFileBtn_clicked();
+
+    void on_addFolderBtn_clicked();
+
+    void on_extractAllBtn_clicked();
+
+    void on_extractSelectedBtn_clicked();
+
+    void on_saveBtn_clicked();
+
+    void on_saveAsBtn_clicked();
+
   private:
     Ui::MainWindow *ui = nullptr;
     AxpArchivePort* m_axpArchive = nullptr;
