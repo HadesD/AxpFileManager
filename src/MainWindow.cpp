@@ -565,8 +565,8 @@ void MainWindow::on_actionNew_From_directory_triggered()
   static constexpr auto fileExt = ".axp";
   auto opennedPathSave = QFileDialog::getSaveFileName(
         this, "Save File...",
-        fileBaseName.indexOf(fileExt) == sizeof(fileExt) ? fileBaseName : (fileBaseName + fileExt)
-                                                           );
+        fileBaseName.indexOf(fileExt) != -1 ? fileBaseName : (fileBaseName + fileExt)
+          );
   if (opennedPathSave.isEmpty())
   {
     return;
