@@ -347,7 +347,7 @@ void MainWindow::setCurrentDir(const QModelIndex &index)
             break;
 
           case AxpArchivePort::FileListData::FileStatus::ORIGIN:
-            statusItem->setForeground(Qt::white);
+            statusItem->setForeground(Qt::black);
             statusTxt = "Origin";
             break;
 
