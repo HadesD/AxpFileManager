@@ -572,7 +572,7 @@ void MainWindow::on_actionSave_As_triggered()
 void MainWindow::on_actionNew_From_directory_triggered()
 {
   static QString opennedPath;
-  opennedPath = QFileDialog::getExistingDirectory(this, "Choose folder to create new Axp", opennedPath);
+  opennedPath = QFileDialog::getExistingDirectory(this, "Choose folder to create new Axp", QDir(opennedPath).filePath(".."));
   if (opennedPath.isEmpty())
   {
     return;
