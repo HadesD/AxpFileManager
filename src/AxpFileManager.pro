@@ -36,6 +36,9 @@ CONFIG(debug, debug|release) {
   CONFIG += console
 } else {
   QMAKE_LFLAGS_WINDOWS = /SUBSYSTEM:WINDOWS,5.01
+  win32 {
+   QMAKE_POST_LINK += mt -nologo -manifest $$PWD/manifest.xml -outputresource:$$OUT_PWD/release/$$TARGET".exe" $$escape_expand(\n\t)
+  }
 }
 
 INCLUDEPATH += $$PWD/../deps/LibAxpArchive/include

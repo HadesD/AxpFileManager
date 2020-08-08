@@ -55,4 +55,10 @@ namespace Utils {
   {
     return getExtIcon(ext, SHGFI_SMALLICON);
   }
+
+  QString basename(const QUrl& fullFilePath)
+  {
+    return fullFilePath.fileName();
+  }
+
 }
