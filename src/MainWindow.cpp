@@ -260,8 +260,9 @@ bool MainWindow::event(QEvent* event)
 
 void MainWindow::on_actionOpen_triggered()
 {
-  QString opennedPath = QFileDialog::getOpenFileName(
-        this, "Open File", nullptr, tr("Axp archive (*.axp);;All Files (*)")
+  static QString opennedPath;
+  opennedPath = QFileDialog::getOpenFileName(
+        this, "Open File", opennedPath, tr("Axp archive (*.axp);;All Files (*)")
         );
   this->openAxpArchive(opennedPath);
 }
@@ -273,8 +274,9 @@ void MainWindow::on_actionAbout_triggered()
 
 void MainWindow::on_actionNew_triggered()
 {
-  QString opennedPath = QFileDialog::getSaveFileName(
-        this, tr("Create new Axp archive file"), nullptr,
+  static QString opennedPath;
+  opennedPath = QFileDialog::getSaveFileName(
+        this, tr("Create new Axp archive file"), opennedPath,
         tr("Axp archive (*.axp);;All Files (*)"));
   if (opennedPath.isEmpty())
   {
@@ -397,7 +399,8 @@ void MainWindow::setCurrentDir(const QModelIndex &index)
 
 void MainWindow::on_actionExtract_All_Data_triggered()
 {
-  QString opennedPath = QFileDialog::getExistingDirectory(this, "Choose folder to save extract file(s)");
+  static QString opennedPath;
+  opennedPath = QFileDialog::getExistingDirectory(this, "Choose folder to save extract file(s)", opennedPath);
   if (opennedPath.isEmpty()) {
     return;
   }
@@ -568,7 +571,8 @@ void MainWindow::on_actionSave_As_triggered()
 
 void MainWindow::on_actionNew_From_directory_triggered()
 {
-  auto opennedPath = QFileDialog::getExistingDirectory(this, "Choose folder to create new Axp");
+  static QString opennedPath;
+  opennedPath = QFileDialog::getExistingDirectory(this, "Choose folder to create new Axp", opennedPath);
   if (opennedPath.isEmpty())
   {
     return;
@@ -576,7 +580,12 @@ void MainWindow::on_actionNew_From_directory_triggered()
 
   auto fileBaseName = Utils::basename(opennedPath);
   static constexpr auto fileExt = ".axp";
-  auto opennedPathSave = QFileDialog::getSaveFileName(
+  static QString opennedPathSave;
+  if (opennedPathSave.isEmpty())
+  {
+    QDir::setCurrent(opennedPath);
+  }
+  opennedPathSave = QFileDialog::getSaveFileName(
         this, "Save File...",
         fileBaseName.indexOf(fileExt) != -1 ? fileBaseName : (fileBaseName + fileExt)
           );
@@ -584,6 +593,7 @@ void MainWindow::on_actionNew_From_directory_triggered()
   {
     return;
   }
+  QDir::setCurrent(QDir(opennedPathSave).filePath(".."));
 
   m_axpArchive->close();
 
