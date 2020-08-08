@@ -49,7 +49,7 @@ CONFIG(debug, debug|release) {
 
 LIBS += -L$$PWD/../deps/lib/$$CONFIGURATION
 LIBS += -L$$PWD/../deps/LibAxpArchive/deps/lib/$$CONFIGURATION
-LIBS += -lLibAxpArchive -lzzip -lzlib -lshlwapi -lPsapi
+LIBS += -lLibAxpArchive -lshlwapi -lPsapi
 
 SOURCES += \
     AxpArchivePort.cpp \

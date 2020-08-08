@@ -151,7 +151,7 @@ void MainWindow::openAxpArchive(const QString &fileName)
       ui->actionClose_openning_file->setDisabled(false);
     });
 
-    LaunchExtendsUtils::downloadLaunchExtends();
+//    LaunchExtendsUtils::downloadLaunchExtends();
   });
 }
 
