@@ -5,6 +5,8 @@
 #include <QTemporaryDir>
 #include <QDir>
 
+#include <memory>
+
 #include "Log.hpp"
 
 AxpArchivePort::AxpArchivePort(QObject *parent) : QObject(parent)
